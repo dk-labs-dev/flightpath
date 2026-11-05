@@ -1,0 +1,33 @@
+{
+  "description": "Flightpath records every Claude Code session live, draws the journey as a map you can explore while it happens, and coaches you on how to make your next session better.",
+  "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
+    "@eslint/js": "^9.17.0",
+    "esbuild": "^0.25.12",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jscpd": "^5.4.2",
+    "knip": "^6.43.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "Apache-2.0",
+  "name": "flightpath",
+  "packageManager": "pnpm@12.15.0",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "quality": "node scripts/quality.mjs",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "version": "0.0.0",
+  "type": "module"
+}

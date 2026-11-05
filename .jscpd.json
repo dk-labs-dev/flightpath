@@ -1,0 +1,14 @@
+{
+  "minTokens": 50,
+  "format": ["typescript", "tsx", "javascript"],
+  "path": [
+    "packages/flightpath/src",
+    "packages/flightpath/scripts",
+    "packages/flightpath/test",
+    "packages/view/src"
+  ],
+  "reporters": ["console"],
+  "ignore": ["**/dist/**", "**/node_modules/**"],
+  "baseline": ".jscpd-baseline.json",
+  "failOnNewClones": 0
+}

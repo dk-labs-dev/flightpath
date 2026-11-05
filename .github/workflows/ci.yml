@@ -1,0 +1,140 @@
+name: CI
+
+# Private-repository minutes are limited, and each job bills in whole
+# minutes (Windows at 2x, macOS at 10x). So a pull request runs once,
+# on its final head, when the run-ci label is added; main is not run
+# again after the merge because that tree has just been tested. The
+# weekly run covers all three systems and the other Node lines.
+on:
+  pull_request:
+    types: [labeled]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      oses:
+        description: Which systems to run on
+        type: choice
+        options: [linux, linux+windows, all]
+        default: linux
+      node_lines:
+        description: Also run the node:sqlite files on the oldest and newest Node
+        type: boolean
+        default: false
+
+# The label is part of the group so that adding some other label
+# cannot cancel a run that run-ci started.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}-${{ github.event.label.name }}
+  cancel-in-progress: true
+
+jobs:
+  # One job per system, with no sharding: every extra job pays its own
+  # install and setup minute. Static checks give the same answer on
+  # every system, so only Linux runs them. The budgets and the timing
+  # test come last and run alone, because a wall-clock budget measured
+  # beside other test files measures those files. Hosted macOS runners
+  # have no GPU, so the scroll-frame budgets are logged there but not
+  # asserted (FLIGHTPATH_NO_GPU); every other test and budget still runs.
+  system:
+    name: ${{ matrix.os }}
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'run-ci' }}
+    runs-on: ${{ fromJSON('{"linux":"ubuntu-latest","windows":"windows-latest","macos":"macos-latest"}')[matrix.os] }}
+    strategy:
+      # A failure on one system must not cancel the others: the point
+      # of the matrix is to see every result.
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'schedule' && '["linux", "windows", "macos"]' || github.event_name == 'workflow_dispatch' && (inputs.oses == 'all' && '["linux", "windows", "macos"]' || inputs.oses == 'linux+windows' && '["linux", "windows"]' || '["linux"]') || '["linux"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The remaining steps run even after a failure, so one run shows
+      # every red result instead of the first.
+      - if: ${{ matrix.os == 'linux' }}
+        run: pnpm format:check
+      - if: ${{ !cancelled() && matrix.os == 'linux' }}
+        run: pnpm lint
+      - if: ${{ !cancelled() && matrix.os == 'linux' }}
+        run: pnpm quality
+      - if: ${{ !cancelled() && matrix.os == 'linux' }}
+        run: pnpm typecheck
+
+      # The key carries the Playwright version, so an upgrade never
+      # restores browsers built for the old one. The save is its own step
+      # because a failed run must still keep the browsers it downloaded.
+      - id: playwright
+        shell: bash
+        run: echo "version=$(pnpm --filter @flightpath/flightpath exec playwright --version | awk '{ print $2 }')" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
+          key: playwright-${{ matrix.os }}-${{ steps.playwright.outputs.version }}
+      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
+        run: pnpm --filter @flightpath/flightpath exec playwright install --with-deps chromium
+      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
+          key: ${{ steps.browsers.outputs.cache-primary-key }}
+      # System packages live outside the cached folder, so Linux needs
+      # them again even when the browser itself is cached.
+      - if: ${{ steps.browsers.outputs.cache-hit == 'true' && matrix.os == 'linux' }}
+        run: pnpm --filter @flightpath/flightpath exec playwright install-deps chromium
+
+      # Built once for everything below. Vitest's default is one worker
+      # fewer than the vCPUs, which is a single worker on a two-vCPU
+      # private runner; the suite waits on child processes and
+      # browsers as much as it computes, so three keep both busy on
+      # Linux. Windows and macOS keep the default: three workers
+      # overload a two-vCPU Windows runner until the migration and
+      # schema tests pass their five-second timeout.
+      - run: pnpm --filter @flightpath/flightpath run build
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project main${{ matrix.os == 'linux' && ' --maxWorkers=3' || '' }}
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter @flightpath/view run test
+      - if: ${{ !cancelled() }}
+        env:
+          FLIGHTPATH_NO_GPU: ${{ matrix.os == 'macos' && '1' || '' }}
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project budgets
+      - if: ${{ !cancelled() }}
+        working-directory: packages/flightpath
+        env:
+          FLIGHTPATH_TIMING_GATE: "1"
+        run: pnpm exec vitest run test/hook-script.test.ts -t "runs fast against a live daemon"
+
+  # The built-in node:sqlite behaves differently across Node release
+  # lines, so the files that use it, and the one that checks its
+  # experimental warning never reaches the user, also run on the
+  # oldest supported release and on the newest. The module is the
+  # same on every system, so Linux is enough.
+  node-lines:
+    name: node-lines ${{ matrix.node }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.node_lines) }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 24.0.0 is one of the lines that print node:sqlite's
+        # experimental warning, which the storage tests assert never
+        # reaches the user.
+        node: ["24.0.0", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The warning test loads the compiled storage module.
+      - run: pnpm --filter @flightpath/flightpath exec tsc -p tsconfig.build.json
+      - run: pnpm --filter @flightpath/flightpath exec vitest run --project node-lines

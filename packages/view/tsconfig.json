@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // No "types" entry: the modules this package type-checks
+    // against import nothing from Node, so Node's types stay out
+    // of the program and view code can only use what a browser
+    // has.
+    // The view is bundled by esbuild, so it resolves and emits the
+    // way a bundler does, not the way Node does.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "noEmit": true
+  },
+  "include": ["src", "test"]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "flightpath",
+  "version": "0.0.0",
+  "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session.",
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "flightpath",
+  "owner": {
+    "name": "Flightpath"
+  },
+  "plugins": [
+    {
+      "name": "flightpath",
+      "source": "./packages/flightpath",
+      "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session."
+    }
+  ]
+}

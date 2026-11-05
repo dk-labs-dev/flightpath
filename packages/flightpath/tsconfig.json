@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "types": ["node"],
+    // The browser tests' page callbacks use DOM globals, so
+    // the lib names them outright.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "extends": "../../tsconfig.base.json",
+  "include": ["src", "test"]
+}

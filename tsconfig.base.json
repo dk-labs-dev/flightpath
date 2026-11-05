@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    // Indexed access returns T | undefined: session data is full of lookups
+    // by id, and silently treating a miss as present is a bug we want the
+    // compiler to catch.
+    "noUncheckedIndexedAccess": true,
+    // An optional field being absent must not be interchangeable with it
+    // being present-but-undefined; capture records rely on the distinction
+    // when a field was never sent.
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    // Typecheck only: no tsc invocation in this repo may emit .js next to
+    // the sources. Builds, when they arrive, get their own configs.
+    "noEmit": true
+  }
+}

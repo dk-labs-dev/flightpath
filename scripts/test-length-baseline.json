@@ -1,0 +1,27 @@
+[
+  {
+    "path": "packages/flightpath/test/long-sessions.test.ts",
+    "name": "a daemon killed mid-read restarts to exactly the clean read's rows",
+    "lines": 93
+  },
+  {
+    "path": "packages/flightpath/test/long-sessions.test.ts",
+    "name": "applies a turn-end event at 5,000 steps as fast as at the start",
+    "lines": 114
+  },
+  {
+    "path": "packages/flightpath/test/long-sessions.test.ts",
+    "name": "the start-time import does not delay the first acknowledged event",
+    "lines": 90
+  },
+  {
+    "path": "packages/flightpath/test/retention.test.ts",
+    "name": "delete-all stays deleted across a restart: the import does not bring a session back",
+    "lines": 134
+  },
+  {
+    "path": "packages/flightpath/test/stream.test.ts",
+    "name": "retries a reset's failed snapshot load in the client, and reports caught up only once a load lands",
+    "lines": 101
+  }
+]

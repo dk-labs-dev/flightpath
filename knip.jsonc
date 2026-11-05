@@ -1,0 +1,45 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // jscpd is run by scripts/quality.mjs, which spawns it by path;
+  // knip cannot see that reference, so it is listed here rather than
+  // reported unused on every run.
+  "ignoreDependencies": ["jscpd"],
+  "workspaces": {
+    ".": {
+      // The quality gate's scripts: quality.mjs is the entry the
+      // package script names; the two checks are the files it runs.
+      "entry": ["scripts/*.mjs"],
+      "project": ["scripts/**/*.mjs"],
+    },
+    "packages/flightpath": {
+      // The entries are the files the plugin and the build start
+      // from: the bundled entry points in build.mjs, the view,
+      // the standalone scripts, and the test files (run by vitest,
+      // imported by nothing).
+      "entry": [
+        "src/hook.ts",
+        "src/daemon.ts",
+        "src/command.ts",
+        "src/submit-command.ts",
+        "src/notice.ts",
+        "scripts/*.mjs",
+        "test/*.test.ts",
+      ],
+      "project": ["src/**/*.ts", "scripts/**/*.mjs", "test/**/*.ts"],
+      // axe-core is loaded by the view tests through
+      // createRequire().resolve("axe-core/axe.js"), a string knip
+      // does not follow.
+      "ignoreDependencies": ["axe-core"],
+      // pwsh is the PowerShell the Windows-expression test runs
+      // when one is installed — a system binary, not a package.
+      "ignoreBinaries": ["pwsh"],
+    },
+    "packages/view": {
+      // The entry is the file the view's build bundles; the build
+      // script itself is named by the package's build script.
+      // The tests are run by vitest, imported by nothing.
+      "entry": ["src/main.tsx", "test/*.test.{ts,tsx}"],
+      "project": ["src/**/*.{ts,tsx}", "test/**/*.{ts,tsx}"],
+    },
+  },
+}

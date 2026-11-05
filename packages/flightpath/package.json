@@ -1,0 +1,30 @@
+{
+  "description": "Flightpath: records every Claude Code session live, draws the journey as a map, and coaches the next session.",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "axe-core": "^4.14.0",
+    "playwright": "^1.64.1",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  },
+  "exports": {
+    "./daemon/stream-messages": "./src/daemon/stream-messages.ts",
+    "./format": "./src/format.ts",
+    "./settings/types": "./src/settings/types.ts",
+    "./api/context-limit": "./src/api/context-limit.ts",
+    "./api/payloads": "./src/api/payloads.ts",
+    "./api/rebuild-cause": "./src/api/rebuild-cause.ts"
+  },
+  "license": "Apache-2.0",
+  "name": "@flightpath/flightpath",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node build.mjs && pnpm --filter @flightpath/view run build",
+    "test": "tsc -p tsconfig.build.json && node build.mjs && pnpm --filter @flightpath/view run build && vitest run --project main && vitest run --project budgets",
+    "typecheck": "tsc --noEmit",
+    "measure-ingest": "node --expose-gc scripts/measure-ingest.mjs",
+    "regen-tokens-fixture": "node scripts/regenerate-tokens-fixture.mjs"
+  },
+  "type": "module",
+  "version": "0.0.0"
+}

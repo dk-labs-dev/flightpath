@@ -1,0 +1,77 @@
+[
+  {
+    "path": "packages/flightpath/src/commands.ts",
+    "reason": "A 40-line file; the header records the one-definition invariant (ADR-0024) its three callers rely on, so the ratio is the small denominator.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/daemon/lock.ts",
+    "reason": "Two baseline eslint disables live in this file (the 65-line lock function and its depth-4 block); the directive lines are what take it over 20%, and both come out when the function is split.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/daemon/log.ts",
+    "reason": "A 26-line file; its comments state the log's content rule (never an event body) and why write failures are swallowed.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/daemon/retention.ts",
+    "reason": "The header states the retention guarantees (ADR-0025) the code has to keep; the rest mark where an ordering matters.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/daemon/spawn.ts",
+    "reason": "The comments record the start-lock protocol and why child_process loads lazily on the hook path — constraints the code alone doesn't show.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/data-dir.ts",
+    "reason": "A 40-line file whose comments record the platform rules (XDG, per-OS locations) behind each directory choice.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/src/settings/types.ts",
+    "reason": "A types-only module: the field comments state when the page shows a note or a read-only field instead of a control — the contract the settings screen is built to — and the header states the no-Node-imports constraint the view's type-check relies on.",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/src/redact/allowlist.ts",
+    "reason": "The tables are the redaction security boundary; the comments state the keep-by-allow-list rule a reviewer checks the tables against.",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/src/redact/secrets.ts",
+    "reason": "Each pattern's comment states the credential shape it catches and why it is anchored that way — the false-positive reasoning is the content.",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/src/storage/sqlite.ts",
+    "reason": "A 19-line file; the header explains the load order (warning filter first, then getBuiltinModule) that is the file's whole reason to exist (ADR-0020).",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/src/storage/warning-filter.ts",
+    "reason": "One baseline eslint disable (the nested ternary) is what takes this 24-line file over 20%; it comes out when the ternary is removed.",
+    "baseline": true
+  },
+  {
+    "path": "packages/flightpath/test/support/remove-tree.ts",
+    "reason": "A 14-line helper; the comment records the ENOTEMPTY race with a still-writing child process that its retries exist for.",
+    "baseline": true
+  },
+  {
+    "path": "packages/view/src/sessions/api.ts",
+    "reason": "The header and docs state the picker's data contract — the stream, not polling, keeps the list current; the shell's sink writes rows and tombstones into the query cache; a catch-up reconciles with one reload — and the narrow wrap the view's comments use puts those lines over the ratio.",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/src/api/payloads.ts",
+    "reason": "A module of payload types whose doc comments are the API's only description.",
+    "baseline": false
+  },
+  {
+    "path": "packages/flightpath/scripts/regenerate-tokens-fixture.ts",
+    "reason": "A generator program: its header states the runner contract, and the generated fixture's own header — five lines inside a template string the line counter reads as comments — states the do-not-edit rule the daemon's tests enforce.",
+    "baseline": false
+  }
+]

@@ -1,0 +1,2 @@
+# Accepted decision records are never edited, so formatting must not touch them.
+docs/adr/0*.md

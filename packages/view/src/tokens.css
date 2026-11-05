@@ -1,0 +1,94 @@
+/* Each colour is one light-dark(light, dark) pair, so a palette change edits
+   one line. The pair resolves from the root's color-scheme, which follows the
+   theme choice (data-theme) and falls back to the system setting. */
+:root {
+  color-scheme: light dark;
+
+  --accent: light-dark(#111111, #000000);
+  --accent-ink: light-dark(#111111, #bef264);
+  --accent-wash: light-dark(#f2f2f2, #1a2410);
+  --accent-line: light-dark(#111111, #a3e635);
+  --band: light-dark(#f4f4f4, #141414);
+  --band-line: light-dark(#e6e6e6, #262626);
+  --band-ink: light-dark(#333333, #d4d4d4);
+  --row-hover: light-dark(#f7f7f7, #161616);
+  --bar-rest: light-dark(#e4e4e4, #a3e635);
+  --on-accent: #fff;
+  --on-accent-soft: light-dark(#d4d4d4, #d6ebf2);
+  --on-accent-link: light-dark(#f5f5f5, #eaf6fb);
+  --on-accent-tint: rgba(255, 255, 255, 0.12);
+  --on-accent-panel: rgba(255, 255, 255, 0.14);
+  --on-accent-chip: rgba(255, 255, 255, 0.08);
+  --on-accent-pill: #fff;
+  --on-accent-pill-ink: #8f231d;
+  --on-accent-line: rgba(255, 255, 255, 0.3);
+  --human: light-dark(#2563eb, #93c5fd);
+  --human-bg: light-dark(#eaf1ff, #172036);
+  --success: light-dark(#4d7c0f, #a3e635);
+  --success-ink: light-dark(#3f6212, #bef264);
+  --success-bg: light-dark(#f0f9e0, #1a2410);
+  --on-accent-live: #a3e635;
+  --live-ring: light-dark(rgba(47, 125, 79, 0.35), rgba(92, 193, 133, 0.4));
+  --live-ring-fade: light-dark(rgba(47, 125, 79, 0), rgba(92, 193, 133, 0));
+  --appbar-ring: rgba(122, 224, 160, 0.7);
+  --appbar-ring-fade: rgba(122, 224, 160, 0);
+  --warning: light-dark(#8a4e00, #f0b25c);
+  --grade-fix: light-dark(#8a4e00, #f0b25c);
+  --grade-look: light-dark(#8a4e00, #f0b25c);
+  --grade-know: light-dark(#525252, #a3a3a3);
+  --primary-button: light-dark(#111111, #a3e635);
+  --on-primary-button: light-dark(#ffffff, #000000);
+  --warning-wash: light-dark(#fdf1df, #36280f);
+  --warning-line: light-dark(#f1cf9c, #6b4d1c);
+  --unsaved-ink: light-dark(#7a4600, #f3bd73);
+  --note-ink: light-dark(#7a4600, #f3bd73);
+  --reconnect-bg: light-dark(#fde7b8, #5a4210);
+  --reconnect-ink: light-dark(#5c3a00, #fde7b8);
+  --failure: light-dark(#b42d26, #f07a71);
+  --on-failure: light-dark(#fff, #1b1314);
+  --failure-ink: light-dark(#8f231d, #f6a49d);
+  --failure-ink-soft: light-dark(#7a3a35, #eaa79f);
+  --failure-wash: light-dark(#fbe7e5, #3a1a18);
+  --failure-line: light-dark(#e9b3ae, #7a3530);
+  --failure-banner-bg: light-dark(#fbeceb, #331817);
+  --failure-banner-line: light-dark(#f3d3cf, #5e2a26);
+  --failure-deep: light-dark(#5e1a15, #fbd1cd);
+  --subagent: light-dark(#4d7c0f, #a3e635);
+  --subagent-bg: light-dark(#f0f9e0, #1a2410);
+  --quiet-bg: light-dark(#f2f2f2, #1a1a1a);
+  --quiet-dot: light-dark(#7d8a95, #8d9aa6);
+  --compaction: light-dark(#8a949d, #7f8a94);
+  --ink: light-dark(#0a0a0a, #fafafa);
+  --ink-mid: light-dark(#404040, #d4d4d4);
+  --ink-soft: light-dark(#525252, #a3a3a3);
+  --ink-faint: #8a8a8a;
+  --ink-link: light-dark(#262626, #e5e5e5);
+  --on-ink: light-dark(#fff, #0a0a0a);
+  --line: light-dark(#e5e5e5, #262626);
+  --line-soft: light-dark(#f2f2f2, #1a1a1a);
+  --line-strong: light-dark(#d4d4d4, #525252);
+  --switch-on: light-dark(#111111, #a3e635);
+  --switch-off: light-dark(#7d8a95, #6b7782);
+  --switch-knob: #ffffff;
+  --paper: light-dark(#ffffff, #0a0a0a);
+  --wash: light-dark(#fafafa, #000000);
+  --shadow: light-dark(rgba(27, 34, 40, 0.14), rgba(0, 0, 0, 0.45));
+  --backdrop: light-dark(rgba(27, 34, 40, 0.45), rgba(0, 0, 0, 0.6));
+  --shadow-soft: light-dark(rgba(27, 34, 40, 0.12), rgba(0, 0, 0, 0.35));
+  --shadow-strong: light-dark(rgba(27, 34, 40, 0.2), rgba(0, 0, 0, 0.55));
+  --chart-limit: light-dark(#404040, #d4d4d4);
+  --chart-autocompact: light-dark(#b06a00, #f0b25c);
+  --chart-rebuild: light-dark(#b06a00, #f0b25c);
+  --chart-idle: light-dark(#efefef, #1a1a1a);
+  --room-track: light-dark(#f0f0f0, #141414);
+  --room-base: light-dark(#bdbdbd, #a3e635);
+  --room-left: #65a30d;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}

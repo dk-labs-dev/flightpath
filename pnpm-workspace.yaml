@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+
+# pnpm does not run dependencies' build scripts unless they are listed here.
+# esbuild (vitest's transformer) needs its postinstall to place the platform
+# binary; it is the only dependency that needs one.
+allowBuilds:
+  esbuild: true

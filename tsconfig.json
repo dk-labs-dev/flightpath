@@ -1,0 +1,4 @@
+{
+  "files": [],
+  "references": [{ "path": "packages/flightpath" }, { "path": "packages/view" }]
+}
