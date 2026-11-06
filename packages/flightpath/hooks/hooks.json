@@ -210,6 +210,16 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/dist/line.js"]
+          }
+        ]
       }
     ],
     "StopFailure": [
