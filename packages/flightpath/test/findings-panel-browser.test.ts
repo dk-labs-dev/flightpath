@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { startSeededBrowser } from "./support/browser.js";
 import { runCleanups } from "./support/cleanup.js";
+import { openFindingsList } from "./support/findings-page.js";
 import {
   FINDINGS_SESSION,
   pinned,
@@ -40,13 +41,6 @@ async function open(page: Page, session = FINDINGS_SESSION): Promise<void> {
   await page.goto(`${base}/#session/${session}&token=${token}`);
   await page.waitForSelector(".summary");
   await page.waitForSelector(".trow");
-}
-
-async function openList(page: Page): Promise<void> {
-  await page.locator(".findings-toggle").click();
-  await expect
-    .poll(() => page.locator(".findings-region").isVisible())
-    .toBe(true);
 }
 
 const marker = (page: Page, stepId: number) =>
@@ -115,17 +109,16 @@ describe("the markers", () => {
 });
 
 describe("the list and the card", () => {
-  it("starts shut with the mixed line and opens to the cards", async () => {
+  it("starts open with the cards in view when a suggestion is worth fixing", async () => {
     const page = await newThemedPage(browser, "light");
     await open(page);
     const toggle = page.locator(".findings-toggle");
     await expect
       .poll(() => toggle.textContent())
       .toBe("3 suggestions · 1 worth fixing");
-    expect(await toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(await toggle.getAttribute("aria-expanded")).toBe("true");
     const controls = await toggle.getAttribute("aria-controls");
-    expect(await page.locator(`#${controls}`).count()).toBe(1);
-    await openList(page);
+    expect(await page.locator(`#${controls}`).isVisible()).toBe(true);
     expect(
       await page.locator(".findings-region .finding-grade").allTextContents(),
     ).toEqual(["Worth fixing", "Worth a look", "Worth a look"]);
@@ -135,7 +128,7 @@ describe("the list and the card", () => {
   it("opens the step on its Suggestions tab from Show in steps", async () => {
     const page = await newThemedPage(browser, "light");
     await open(page);
-    await openList(page);
+    await openFindingsList(page);
     await page.locator(".findings-region .finding-show").first().click();
     await expect
       .poll(() =>

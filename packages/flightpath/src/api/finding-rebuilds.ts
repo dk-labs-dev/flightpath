@@ -33,7 +33,7 @@ const EFFORT_SENSITIVE_MODEL =
 
 type NamedRebuild = Pick<
   Finding,
-  "kind" | "headline" | "body" | "list" | "doc" | "copy"
+  "kind" | "headline" | "body" | "list" | "more" | "doc" | "copy"
 >;
 
 // A request after a cold one is warming up, not rebuilding,

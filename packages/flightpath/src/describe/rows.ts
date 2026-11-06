@@ -30,4 +30,6 @@ export interface StepContext {
   telemetrySeen?: boolean;
   sessionId?: string;
   savedOutputOf?: string;
+  /** When set, a file path inside it is worded relative to it. */
+  projectPath?: string;
 }

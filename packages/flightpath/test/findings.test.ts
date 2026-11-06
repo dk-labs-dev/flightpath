@@ -108,6 +108,7 @@ describe("a rebuild after the cache expired", () => {
           "Compact before a long break · 62.4K tokens written again after 1h 11m away",
         body: "The cache had expired, so the next message wrote the conversation again. You could run /compact before stepping away, or start a fresh session if you are not coming back to this work.",
         list: [],
+        more: [],
         doc: {
           label: "Prompt caching: how long the cache lasts",
           url: "https://code.claude.com/docs/en/prompt-caching#cache-lifetime",

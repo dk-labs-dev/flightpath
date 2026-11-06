@@ -196,12 +196,15 @@ export function markerName({ grade, more }: RowMarker): string {
   return `${grade}, and ${countLine(more, "more suggestion", "more suggestions")}`;
 }
 
-/** The session list's line, such as "3 suggestions · 1 worth fixing".
- * Only the worst grade is counted, so the line stays short. */
+/** The session list's line, such as "3 suggestions · 1 worth fixing"
+ * or "1 suggestion · Did you know". Only the worst grade is said, so
+ * the line stays short. */
 export function listLine(findings: readonly Finding[]): string {
   const line = countLine(findings.length, "suggestion", "suggestions");
+  const worst = worstGrade(findings.map((finding) => finding.grade));
+  if (worst !== "Worth fixing") return `${line} · ${worst}`;
   const worth = findings.filter(
     (finding) => finding.grade === "Worth fixing",
   ).length;
-  return worth === 0 ? line : `${line} · ${worth} worth fixing`;
+  return `${line} · ${worth} worth fixing`;
 }

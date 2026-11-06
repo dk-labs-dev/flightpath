@@ -1,7 +1,8 @@
-// The session's findings as one collapsed line above the step
-// tree. It opens to the same cards the detail panel shows. It
-// starts shut every time the screen opens, and renders nothing
-// when there is nothing to say.
+// The session's findings as one heading above the step tree,
+// with the worst grade's marker and the count. It opens to the
+// same cards the detail panel shows. It starts open when any
+// finding is worth fixing and shut otherwise, every time the
+// screen opens, and renders nothing when there is nothing to say.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -9,7 +10,7 @@ import type { Finding } from "@flightpath/flightpath/api/payloads";
 
 import { ChevronIcon } from "../components/icons.js";
 import { findingHeadingId, FindingCard } from "./FindingCard.js";
-import { anchoredStep, listLine } from "./findings.js";
+import { anchoredStep, listLine, worstGrade } from "./findings.js";
 import { useFindingsState } from "./findings-context.js";
 import { GradeMarker } from "./GradeMarker.js";
 
@@ -37,24 +38,32 @@ function ListToggle({
   onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
-      className="findings-toggle"
-      aria-expanded={open}
-      aria-controls={REGION_ID}
-      onClick={onToggle}
-    >
-      <ChevronIcon open={open} size={14} />
-      <span className="findings-line">{listLine(findings)}</span>
-      {!open && (
-        <span className="findings-grades" aria-hidden="true">
-          {findings.map((finding) => (
-            <GradeMarker key={finding.id} grade={finding.grade} />
-          ))}
-        </span>
-      )}
-    </button>
+    <h3 className="findings-heading">
+      <button
+        type="button"
+        className="findings-toggle"
+        aria-expanded={open}
+        aria-controls={REGION_ID}
+        onClick={onToggle}
+      >
+        <ChevronIcon open={open} size={14} />
+        <GradeMarker grade={worstGrade(findings.map((f) => f.grade))} />
+        <span className="findings-line">{listLine(findings)}</span>
+      </button>
+    </h3>
   );
+}
+
+// Only the person's own choice is stored, so a finding worth fixing
+// that arrives or goes moves the default.
+function useListOpen(
+  findings: readonly Finding[],
+): [boolean, (open: boolean) => void] {
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const worthFixing = findings.some(
+    (finding) => finding.grade === "Worth fixing",
+  );
+  return [chosen ?? worthFixing, setChosen];
 }
 
 interface PendingFocus {
@@ -62,17 +71,13 @@ interface PendingFocus {
   neighbour: Finding | undefined;
 }
 
-export function FindingsList({
-  onShowInSteps,
-}: {
-  onShowInSteps: (stepId: number) => void;
-}) {
-  const { findings, anchors, failedId, dismiss } = useFindingsState();
-  const [open, setOpen] = useState(false);
+// Dismisses the finding at an index and, once the list has
+// re-rendered without it, moves focus to a card that is still there.
+function useDismissWithFocus(
+  findings: readonly Finding[],
+  dismiss: (findingId: string) => Promise<boolean>,
+): (index: number) => void {
   const pendingFocus = useRef<PendingFocus | null>(null);
-
-  // Focus moves once the list has re-rendered without the
-  // dismissed card, so it lands on a card that is still there.
   useEffect(() => {
     const pending = pendingFocus.current;
     if (pending === null) return;
@@ -80,10 +85,7 @@ export function FindingsList({
     pendingFocus.current = null;
     focusAfterDismiss(pending.neighbour);
   }, [findings]);
-
-  if (findings.length === 0) return null;
-
-  const dismissCard = (index: number): void => {
+  return (index) => {
     const gone = findings[index];
     if (gone === undefined) return;
     pendingFocus.current = {
@@ -93,6 +95,25 @@ export function FindingsList({
     void dismiss(gone.id).then((done) => {
       if (!done) pendingFocus.current = null;
     });
+  };
+}
+
+export function FindingsList({
+  onShowInSteps,
+}: {
+  onShowInSteps: (stepId: number) => void;
+}) {
+  const { findings, anchors, failedId, dismiss } = useFindingsState();
+  const [open, setOpen] = useListOpen(findings);
+  const dismissAt = useDismissWithFocus(findings, dismiss);
+
+  if (findings.length === 0) return null;
+
+  // The next card takes focus, so the list stays open even when
+  // the card dismissed was the last finding worth fixing.
+  const dismissCard = (index: number): void => {
+    setOpen(true);
+    dismissAt(index);
   };
 
   return (

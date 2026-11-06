@@ -388,11 +388,20 @@ function roomLeft(
 }
 
 /** A step's sentence, as the describer words it — both
- * reads name a step by it. */
-export function stepLabel(data: SessionData, step: StepRow): string {
+ * reads name a step by it. Given the project's folder, a file
+ * inside it is worded relative to it. */
+export function stepLabel(
+  data: SessionData,
+  step: StepRow,
+  projectPath?: string,
+): string {
   const turn =
     step.turnId === null ? undefined : data.turnsById.get(step.turnId);
-  return describeStep(step, stepContext(step, turn, data)).sentence;
+  const context = stepContext(step, turn, data);
+  return describeStep(
+    step,
+    projectPath === undefined ? context : { ...context, projectPath },
+  ).sentence;
 }
 
 /** The size of a step that entered context: the
@@ -562,7 +571,7 @@ function stepItem(
   step: StepRow,
   measured: MeasuredResult | null,
 ): RiseItem {
-  const label = stepLabel(data, step);
+  const label = stepLabel(data, step, data.session.projectPath ?? undefined);
   const chars = stepChars(step);
   const measuredTokens = measured?.step.id === step.id ? measured.tokens : null;
   if (SUBAGENT_TOOLS.has(step.toolName) && !launchedInBackground(step)) {

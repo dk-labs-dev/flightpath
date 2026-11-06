@@ -40,9 +40,10 @@ it keeps.
 The Steps lens marks each step that has a suggestion with a small
 shape in the suggestion's grade: a filled circle for worth fixing,
 a ring for worth a look, a square for did you know. Opening a
-marked step shows its suggestions on a second tab, and a line above
-the steps lists every suggestion for the session. A suggestion can
-be dismissed, and it stays dismissed after a reload.
+marked step shows its suggestions on a second tab, and a heading above
+the steps lists every suggestion for the session. The heading opens by
+itself when any suggestion is worth fixing. A suggestion can be
+dismissed, and it stays dismissed after a reload.
 
 ## Prerequisites
 

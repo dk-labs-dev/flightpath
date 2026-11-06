@@ -3,9 +3,10 @@
 // words only its controls. The same card serves the detail
 // panel and the session list, so a finding reads one way in both.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { Finding } from "@flightpath/flightpath/api/payloads";
+import { formatCount } from "@flightpath/flightpath/format";
 
 import { NewTabIcon } from "../components/icons.js";
 import { gradeClass } from "./findings.js";
@@ -93,6 +94,52 @@ function SuggestedText({ text, state }: { text: string; state: CopyState }) {
   );
 }
 
+function ListItems({ items }: { items: readonly string[] }) {
+  return (
+    <>
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </>
+  );
+}
+
+// The rest of the list stays in the page, hidden, so the button's
+// aria-controls always names an element.
+function FindingItems({
+  list,
+  more,
+}: {
+  list: readonly string[];
+  more: readonly string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const moreId = useId();
+  return (
+    <div>
+      <ul className="finding-items">
+        <ListItems items={list} />
+      </ul>
+      {more.length > 0 && (
+        <>
+          <ul className="finding-items" id={moreId} hidden={!open}>
+            <ListItems items={more} />
+          </ul>
+          <button
+            type="button"
+            className="finding-more"
+            aria-expanded={open}
+            aria-controls={moreId}
+            onClick={() => setOpen((was) => !was)}
+          >
+            {open ? "Show fewer" : `and ${formatCount(more.length)} more`}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function CardActions({
   finding,
   copy,
@@ -167,11 +214,7 @@ export function FindingCard({
       <p className="finding-headline">{finding.headline}</p>
       <p className="finding-body">{finding.body}</p>
       {finding.list.length > 0 && (
-        <ul className="finding-items">
-          {finding.list.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
+        <FindingItems list={finding.list} more={finding.more} />
       )}
       {finding.copy !== null && (
         <SuggestedText text={finding.copy} state={copy.state} />

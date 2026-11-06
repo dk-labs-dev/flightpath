@@ -725,6 +725,8 @@ export interface Finding {
   body: string;
   /** Lines shown under the body, one item each: paths or names, never contents. Empty when there are none. */
   list: string[];
+  /** The items after those in `list`, which the view shows on request. Empty when `list` is the whole list. */
+  more: string[];
   /** The one official doc page that explains it. */
   doc: { label: string; url: string };
   /** How the size was found: counted on a request, taken from a /context report, or worked out from characters. */

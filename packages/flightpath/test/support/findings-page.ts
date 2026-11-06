@@ -13,8 +13,12 @@ export async function openFindingsSession(
   await page.waitForSelector(".trow");
 }
 
+/** Leaves the list open, whether the session started it open or not. */
 export async function openFindingsList(page: Page): Promise<void> {
-  await page.locator(".findings-toggle").click();
+  const toggle = page.locator(".findings-toggle");
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
   await expect
     .poll(() => page.locator(".findings-region").isVisible())
     .toBe(true);

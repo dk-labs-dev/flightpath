@@ -18,7 +18,7 @@ import {
   parseRecord,
   str,
 } from "../util/json.js";
-import { firstLine, truncate } from "./format.js";
+import { firstLine, relativeToProject, truncate } from "./format.js";
 import type { Described, Fact, StepContext } from "./rows.js";
 
 /** The tools that spawn a subagent. The token history
@@ -154,6 +154,17 @@ export function savedOutputToolUseId(
     : null;
 }
 
+function sentencePath(
+  input: Record<string, unknown>,
+  ctx: StepContext,
+): string {
+  const path = str(input, "file_path");
+  if (path === undefined) return "a file";
+  return ctx.projectPath === undefined
+    ? path
+    : relativeToProject(path, ctx.projectPath);
+}
+
 function describeRead(
   step: StepRow,
   input: Record<string, unknown>,
@@ -161,7 +172,7 @@ function describeRead(
   running: boolean,
   ctx: StepContext,
 ): Described {
-  const path = str(input, "file_path") ?? "a file";
+  const path = sentencePath(input, ctx);
   const offset = num(input, "offset");
   const limit = num(input, "limit");
   if (offset !== undefined && limit !== undefined) {
@@ -192,8 +203,9 @@ function describeEdit(
   input: Record<string, unknown>,
   facts: Fact[],
   running: boolean,
+  ctx: StepContext,
 ): Described {
-  const path = str(input, "file_path") ?? "a file";
+  const path = sentencePath(input, ctx);
   const oldChars = charsOf(input, "old_string");
   const newChars = charsOf(input, "new_string");
   if (bool(input, "replace_all")) {
@@ -215,8 +227,9 @@ function describeWrite(
   input: Record<string, unknown>,
   facts: Fact[],
   running: boolean,
+  ctx: StepContext,
 ): Described {
-  const path = str(input, "file_path") ?? "a file";
+  const path = sentencePath(input, ctx);
   const written = charsOf(input, "content");
   if (written !== undefined) {
     facts.push({
@@ -472,9 +485,9 @@ export function describeStep(step: StepRow, ctx: StepContext = {}): Described {
     case "Read":
       return describeRead(step, input, facts, running, ctx);
     case "Edit":
-      return describeEdit(step, input, facts, running);
+      return describeEdit(step, input, facts, running, ctx);
     case "Write":
-      return describeWrite(step, input, facts, running);
+      return describeWrite(step, input, facts, running, ctx);
     case "Grep":
       return describeGrep(step, input, facts, running);
     case "Glob":
