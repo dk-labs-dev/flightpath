@@ -42,6 +42,15 @@ export const EVENT_TEXT_KEYS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /**
+ * The one field per event that holds the person's own words. Redaction
+ * keeps at most the prompt text limit of it, cut after scrubbing.
+ */
+export const EVENT_PROMPT_KEY: Readonly<Record<string, string>> = {
+  UserPromptSubmit: "prompt",
+  UserPromptExpansion: "command_args",
+};
+
+/**
  * Text fields kept inside the items of one array field of a
  * specific hook event. A PostToolBatch names the calls it
  * closes: the tool-use ids and tool names in its `tool_calls`
