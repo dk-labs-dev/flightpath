@@ -14,8 +14,8 @@ type World = ReturnType<typeof makeSeedWorld>;
 
 const SESSION = "sess-skills";
 
-// Thirty-one skills over 18,039 characters: the staged ledger
-// session's listing, under example names.
+// Thirty-one skills over 18,039 characters: a large listing,
+// under example names.
 const LISTED = Array.from({ length: 31 }, (_, i) => `example-skill-${i + 1}`);
 const LISTING_CHARS = 18_039;
 
@@ -77,7 +77,7 @@ function seedContextReport(world: World, skills: number | null): void {
 }
 
 describe("skills listed and never used", () => {
-  it("is one finding for the staged ledger listing, worded exactly", () => {
+  it("is one finding for a large skill listing, worded exactly", () => {
     expect(skillsFinding(endedWorld())).toEqual({
       id: "skills-unused",
       kind: "skills-unused",
