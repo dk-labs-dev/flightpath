@@ -6,10 +6,11 @@ name: CI
 # The matrices key off the repository's visibility: while it is
 # private they run on Linux only, and they widen to all three
 # systems the day it turns public, with no edit here.
-# One exception: a pull request that changes only documentation
-# and images runs the static checks and the hygiene checks and
-# skips the build and the tests — there is no code in it for them
-# to run on. Pushes and merge-queue groups never take the shortcut.
+# One exception: a pull request or a merge-queue group that changes
+# only documentation and images runs the static checks and the
+# hygiene checks and skips the build and the tests — there is no
+# code in it for them to run on. Pushes and manual runs never take
+# the shortcut.
 on:
   pull_request:
   push:
@@ -51,22 +52,37 @@ jobs:
         env:
           REPO_PRIVATE: ${{ github.event.repository.private }}
         run: node scripts/ci-matrix.mjs >> "$GITHUB_OUTPUT"
-      # Only a pull request can be documentation-only. Its files
-      # are the ones the base and head commits differ on; a file
-      # outside the documentation patterns makes the whole change
-      # a code change. No files at all counts as a code change, so
-      # an odd event runs everything rather than nothing.
+      # Only a pull request or a merge-queue group can be
+      # documentation-only. Its files are the ones its base and head
+      # commits differ on; a file outside the documentation patterns
+      # makes the whole change a code change. No files at all counts
+      # as a code change, so an odd event runs everything rather
+      # than nothing.
       - id: changed
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            echo "code-changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          case "$EVENT_NAME" in
+            pull_request) BASE_SHA="$PR_BASE_SHA"; HEAD_SHA="$PR_HEAD_SHA" ;;
+            merge_group) BASE_SHA="$GROUP_BASE_SHA"; HEAD_SHA="$GROUP_HEAD_SHA" ;;
+            *)
+              echo "code-changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+          # Three dots for a pull request: only its own changes, not
+          # what the base gained since it branched. Two dots for a
+          # group: its head already sits on its base, so the plain
+          # difference is exactly the queued changes.
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          else
+            files=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
           fi
-          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
           if [ -z "$files" ]; then
             echo "code-changed=true" >> "$GITHUB_OUTPUT"
             exit 0
