@@ -23,4 +23,6 @@ Flightpath is a free, local-first developer tool. Its success depends on adoptio
 - Permissive like MIT, and widely approved by companies.
 - Users and contributors get an explicit patent license, which terminates for anyone who brings a patent claim against the project.
 - Modified versions must keep the `NOTICE` file and state that files were changed.
-- Before the repository goes public, a `CONTRIBUTING.md` will require external contributors to sign off their commits under the Developer Certificate of Origin, keeping the provenance of contributions clear.
+- Before external contributions are accepted, a `CONTRIBUTING.md` will require external contributors to sign off their commits under the Developer Certificate of Origin, keeping the provenance of contributions clear.
+
+_Erratum, 2026-11-06: wording only, no change to the decision._

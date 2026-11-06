@@ -4,7 +4,7 @@
 
 ## Context
 
-Flightpath needs user settings, and the list will grow: a port, autostart, the startup notice, telemetry, folders never to record, whether prompt text is kept, how long the daemon idles. Later milestones will add retention, view and coach options.
+Flightpath needs user settings, and the list will grow: a port, autostart, the startup notice, telemetry, folders never to record, whether prompt text is kept, how long the daemon idles. Later versions will add retention, view and coach options.
 
 ADR-0010 gave Flightpath one command, `/flightpath`, with plain subcommands. Putting every setting behind more subcommands would make the command long, hard to discover, and awkward for anything with a list or an explanation, such as telemetry consent or excluded folders. People will use Flightpath mostly through its browser view.
 
@@ -31,3 +31,5 @@ ADR-0010 gave Flightpath one command, `/flightpath`, with plain subcommands. Put
 - Settings need the daemon running to be changed. The startup notice and `/flightpath` both give the link, and the daemon starts with the session.
 - Until the full view arrives, the settings page is a plain form. It's restyled with the view later.
 - Every new setting needs a default, a validation rule and one sentence of explanation, and anything privacy-related is reviewed against ADR-0004.
+
+_Erratum, 2026-11-06: wording only, no change to the decision._

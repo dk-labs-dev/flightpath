@@ -23,4 +23,6 @@ A recording tool that asks people to change their setup adds friction, and it re
 - The data model stores per-session conditions and capture sources.
 - The transcript reader must be able to record a whole session on its own, not just fill gaps. It isn't live in that mode.
 - Coach detectors read the session's conditions before raising a finding.
-- Milestone exit tests run on a real, customized setup, not a clean one.
+- Release tests run on a real, customized setup, not a clean one.
+
+_Erratum, 2026-11-06: wording only, no change to the decision._

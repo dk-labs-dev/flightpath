@@ -4,9 +4,9 @@
 
 ## Context
 
-The view started as plain TypeScript with no framework and no runtime dependencies. That was a choice in the view shell's spec, not an earlier decision. Only the shell, about 250 lines, is built so far, along with a first settings screen that is being reworked.
+The view started as plain TypeScript with no framework and no runtime dependencies. That was a choice made for the view shell, not an earlier decision. Only the shell, about 250 lines, is built so far, along with a first settings screen that is being reworked.
 
-The first review of that settings screen found that about half of its problems were hand-written UI plumbing:
+A first look at that settings screen found that about half of its problems were hand-written UI plumbing:
 
 - keeping the screen's data valid across redraws;
 - carrying unsaved edits through a redraw;
@@ -14,7 +14,7 @@ The first review of that settings screen found that about half of its problems w
 - a prompt that could open twice;
 - guards against data that couldn't be missing.
 
-The screens still to come are harder. The steps lens updates live while the user scrolls, collapses turns, selects a step and filters. The lenses and the coach's findings panel follow later. Writing the view by hand would keep producing this kind of bug and the review rounds that go with it.
+The screens still to come are harder. The steps lens updates live while the user scrolls, collapses turns, selects a step and filters. The lenses and the coach's findings panel follow later. Writing the view by hand would keep producing this kind of bug and the rework that goes with it.
 
 Switching costs about a day now, and three to seven days once the rest of the view is built.
 
@@ -29,7 +29,7 @@ Switching costs about a day now, and three to seven days once the rest of the vi
   - no CSS-in-JS: the existing plain CSS and class names stay;
   - no router, because the hash routing stays in our shell;
   - no state library: React state and context, until a change shows a need.
-- **Every new runtime dependency** is named and justified in the spec of the change that adds it, pinned exactly, and approved in review. A chart library or a list virtualizer comes in only with the change that needs it.
+- **Every new runtime dependency** is named and justified in the description of the change that adds it, pinned exactly, and approved by the maintainers. A chart library or a list virtualizer comes in only with the change that needs it.
 - **Gates:**
   - `rules-of-hooks` and `exhaustive-deps` are lint errors;
   - knip knows the view's entry points;
@@ -57,5 +57,7 @@ Switching costs about a day now, and three to seven days once the rest of the vi
 ## Consequences
 
 - The view gains its first runtime dependency (two packages, about 45 KB compressed) and the hooks discipline that comes with React. Lint rules and a test on the stream hook enforce it.
-- The shell is ported and the settings screen is rebuilt in React. The steps lens, session picker and recorder-health screens are built in React from the start. The current milestone moves by about a day.
+- The shell is ported and the settings screen is rebuilt in React. The steps lens, session picker and recorder-health screens are built in React from the start. The schedule moves by about a day.
 - Contributors after launch work with a framework most of them already know.
+
+_Erratum, 2026-11-06: wording only, no change to the decision._
