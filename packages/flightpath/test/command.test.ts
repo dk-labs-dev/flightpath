@@ -667,7 +667,7 @@ describe("the hooks.json matchers", () => {
   const hooksConfig = JSON.parse(
     readFileSync(new URL("../hooks/hooks.json", import.meta.url), "utf8"),
   ) as {
-    hooks: Record<string, { matcher: string; hooks: { command: string }[] }[]>;
+    hooks: Record<string, { matcher: string; hooks: { args: string[] }[] }[]>;
   };
 
   function matcherFires(matcher: string, name: string): boolean {
@@ -679,7 +679,9 @@ describe("the hooks.json matchers", () => {
 
   function matcherFor(event: string, script: string): string {
     const entry = (hooksConfig.hooks[event] ?? []).find((candidate) =>
-      candidate.hooks.some((hook) => hook.command.includes(script)),
+      candidate.hooks.some((hook) =>
+        hook.args.some((arg) => arg.endsWith(script)),
+      ),
     );
     expect(entry, `${event} -> ${script}`).toBeDefined();
     return requiredValue(entry, `${event} -> ${script}`).matcher;
