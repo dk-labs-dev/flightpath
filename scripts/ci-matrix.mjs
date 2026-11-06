@@ -1,11 +1,8 @@
 // Prints the CI matrices as step outputs for the workflow's
-// prepare job: which runner each system gets, the systems the
-// plain matrices cover, and the main project's shard list. While
-// the repository is private (REPO_PRIVATE=true) the lists cover
-// Linux only; they widen to all three systems when it turns
-// public. Every matrix job in .github/workflows/ci.yml reads these
-// outputs, so the lists live in exactly one place.
+// prepare job: the runner per system, the systems covered, and
+// the main project's shards.
 
+import console from "node:console";
 import process from "node:process";
 
 const runners = {
@@ -14,6 +11,8 @@ const runners = {
   macos: "macos-latest",
 };
 
+// While the repository is private the lists cover Linux only;
+// they widen to all three systems when it turns public.
 const systems =
   process.env.REPO_PRIVATE === "true"
     ? ["linux"]
