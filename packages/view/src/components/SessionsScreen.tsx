@@ -28,6 +28,8 @@ import {
 import { ChevronIcon } from "./icons";
 
 const PAGE = 200;
+const GUIDE_URL =
+  "https://github.com/dk-labs-dev/flightpath/blob/main/docs/guide.md";
 
 interface Filter {
   query: string;
@@ -363,8 +365,10 @@ export function SessionsScreen({
       <>
         {failureLine}
         <p className="empty">
-          No sessions yet. Start Claude Code in a project where Flightpath is
-          installed.
+          Start Claude Code in any project and your session appears here, live.{" "}
+          <a href={GUIDE_URL} target="_blank" rel="noreferrer">
+            Read the guide
+          </a>
         </p>
       </>
     );

@@ -98,6 +98,41 @@ describe("the picker's live card", () => {
   });
 });
 
+describe("the first-open line", () => {
+  const LINE =
+    "Start Claude Code in any project and your session appears here, live.";
+
+  function renderSessions(sessions: SessionListItem[]): void {
+    act(() => {
+      root.render(
+        <SessionsScreen
+          sessions={sessions}
+          failed={false}
+          emptyHidden={0}
+          retentionDays={null}
+        />,
+      );
+    });
+  }
+
+  it("is one plain line with a link to the guide when there is no session", () => {
+    renderSessions([]);
+    const line = container.querySelector(".empty");
+    expect(line?.textContent).toBe(`${LINE} Read the guide`);
+    expect(line?.querySelector("a")?.getAttribute("href")).toBe(
+      "https://github.com/dk-labs-dev/flightpath/blob/main/docs/guide.md",
+    );
+    expect(container.querySelector(".picker")).toBeNull();
+  });
+
+  it("goes away once a session exists", () => {
+    renderSessions([]);
+    renderSessions([earlierItem("sess-a", dayAt(0, 9))]);
+    expect(container.textContent).not.toContain(LINE);
+    expect(container.querySelector(".empty")).toBeNull();
+  });
+});
+
 describe("the empty-sessions line", () => {
   function renderWithHidden(emptyHidden: number): void {
     act(() => {

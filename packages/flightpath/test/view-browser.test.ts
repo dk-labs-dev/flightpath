@@ -185,4 +185,16 @@ describe("axe in a browser", () => {
     await expectAxeCleanOnPage(keyless);
     await keyless.close();
   }, 120_000);
+
+  it("finds no serious or critical violations on the first-open line at phone width", async () => {
+    const page = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+    });
+    await openShell(page);
+    expect(await page.locator("#screen .empty a").textContent()).toBe(
+      "Read the guide",
+    );
+    await expectAxeCleanOnPage(page);
+    await page.close();
+  }, 60_000);
 });
