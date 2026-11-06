@@ -25,6 +25,7 @@ import {
 } from "../transcripts/index.js";
 import { errorMessage } from "../util/errors.js";
 import { unlinkIfPresent } from "../util/fs.js";
+import { cacheHold } from "./cache-hold.js";
 import { clearLastError } from "./last-error.js";
 import { ingestEnvelope, isEnvelope, type Envelope } from "./ingest.js";
 import { acquireDaemonLock, startLockPath, type DaemonLock } from "./lock.js";
@@ -476,9 +477,14 @@ function startTimers(runtime: DaemonRuntime, drainMs: number): void {
   // idle limit (a test override, or a small setting) would
   // otherwise take effect up to a full tick late.
   runtime.timers.idle = setInterval(() => {
-    if (Date.now() - runtime.lastActivity >= runtime.idleMs) {
-      void runtime.shutdown("idle");
-    }
+    const now = Date.now();
+    if (now - runtime.lastActivity < runtime.idleMs) return;
+    runtime.cacheHold = cacheHold(
+      runtime.storage,
+      runtime.lastActivity,
+      runtime.cacheHold,
+    );
+    if (now >= runtime.cacheHold.until) void runtime.shutdown("idle");
   }, 1000);
   runtime.timers.idle.unref();
   // A transcript entry written after a session's latest hook
@@ -590,6 +596,7 @@ function createRuntime(parts: {
     idleMs: parts.idleOptionMs ?? settings.idleShutdownMinutes * 60_000,
     boundPort: 0,
     lastActivity: startedAt,
+    cacheHold: null,
     handoverVersion: null,
     closed: false,
     inFlight: new Set<Promise<unknown>>(),

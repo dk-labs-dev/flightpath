@@ -932,6 +932,38 @@ describe("the settings screen", () => {
     await page.close();
   }, 120_000);
 
+  it("says the recorder also waits for a running session's cache to go cold", async () => {
+    await resetViaApi();
+    const page = await newScreenPage();
+    await openSettings(page);
+    await openAdvanced(page);
+    const help = page.locator("#f-idleShutdownMinutes ~ .field-help");
+    expect((await help.textContent())?.replace(/\s+/g, " ")).toBe(
+      "with no activity, or once a running session's cache has gone cold if that's later (at most about an hour). The next session starts it again.",
+    );
+    await page.close();
+  }, 120_000);
+
+  it("keeps the idle field's sentence inside the screen on a phone", async () => {
+    await resetViaApi();
+    const page = await browser.newPage({
+      viewport: { width: 390, height: 664 },
+    });
+    await openSettings(page);
+    await openAdvanced(page);
+    const box = await page
+      .locator("#f-idleShutdownMinutes ~ .field-help")
+      .boundingBox();
+    expect(box?.x).toBeGreaterThanOrEqual(0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.close();
+  }, 120_000);
+
   it("keeps the save bar in view on a phone while a field has focus", async () => {
     await resetViaApi();
     const page = await browser.newPage({

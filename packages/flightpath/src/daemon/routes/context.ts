@@ -11,6 +11,7 @@ import type { Storage } from "../../storage/index.js";
 import type { TelemetryIntake } from "../../telemetry/index.js";
 import type { TranscriptFollower } from "../../transcripts/index.js";
 import { errorMessage } from "../../util/errors.js";
+import type { CacheHold } from "../cache-hold.js";
 import type { Envelope } from "../ingest.js";
 import { daemonLog } from "../log.js";
 import type { Retention } from "../retention.js";
@@ -45,6 +46,8 @@ export interface DaemonRuntime {
   idleMs: number;
   boundPort: number;
   lastActivity: number;
+  /** Read once the idle limit has passed; see cacheHold. */
+  cacheHold: CacheHold | null;
   handoverVersion: string | null;
   closed: boolean;
   inFlight: Set<Promise<unknown>>;
