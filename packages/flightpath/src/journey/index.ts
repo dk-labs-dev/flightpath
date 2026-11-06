@@ -30,7 +30,8 @@ import {
   fillTurnPromptFigures,
   preparePromptTextStatements,
   promptTextColumns,
-  setTurnPromptText,
+  setTurnPromptColumns,
+  type PromptTextColumns,
   type PromptTextStatements,
 } from "../storage/prompt-text.js";
 import type { LiveSessionHost } from "../storage/read.js";
@@ -590,6 +591,18 @@ function closeTurn(
   }
 }
 
+// Redaction cuts the event's prompt, so a prompt's true size is
+// the figures the hook measured before it did.
+function hookPromptColumns(event: Row, text: string | null): PromptTextColumns {
+  const columns = promptTextColumns(text);
+  const chars = num(event, "prompt_chars");
+  const lines = num(event, "prompt_lines");
+  if (text === null || chars === undefined || lines === undefined) {
+    return columns;
+  }
+  return { text: columns.text, chars, lines };
+}
+
 function ensureTurn(
   st: JourneyStatements,
   sessionId: string,
@@ -613,7 +626,7 @@ function ensureTurn(
   }
   if (open !== undefined) closeTurn(st, sessionId, open, at, "inferred");
   const sequence = (st.nextSequence.get(sessionId) as { n: number }).n;
-  const columns = promptTextColumns(promptText);
+  const columns = hookPromptColumns(event, promptText);
   const result = st.insertTurn.run(
     sessionId,
     promptId ?? null,
@@ -802,7 +815,7 @@ function applyUserPromptSubmit(
   if (turn === undefined) return;
   const text = str(event, "prompt");
   if (text !== undefined && turn.prompt_text === null) {
-    setTurnPromptText(st, turn.id as number, text);
+    setTurnPromptColumns(st, turn.id as number, hookPromptColumns(event, text));
   }
   if (text === undefined && turn.prompt_chars === null) {
     const chars = num(event, "prompt_chars");

@@ -4,14 +4,15 @@
 // The rules live in allowlist.ts (what text may survive) and
 // secrets.ts (what must be scrubbed from surviving text). This module
 // is the walker that applies them. It depends on nothing beyond its
-// own tables and the shared value readers, and never mutates its
-// input: every function returns a new object stamped with
-// REDACTION_VERSION.
+// own tables, the shared value readers and the prompt cut, and
+// never mutates its input: every function returns a new object
+// stamped with REDACTION_VERSION.
 
 import {
   ASK_USER_QUESTION_TEXT_KEYS,
   COMMON_TEXT_KEYS,
   EVENT_ARRAY_ITEM_TEXT_KEYS,
+  EVENT_PROMPT_KEY,
   EVENT_TEXT_KEYS,
   HOOK_EFFORT_TEXT,
   KNOWN_TOOLS,
@@ -25,6 +26,7 @@ import {
   TRANSCRIPT_MESSAGE_TEXT,
 } from "./allowlist.js";
 import { scrubSecrets } from "./secrets.js";
+import { cutPromptText } from "../storage/prompt-text.js";
 import { isPlainObject } from "../util/json.js";
 
 /** The redaction rules' version, stamped onto every redacted event. */
@@ -180,7 +182,13 @@ export function redactHookEvent(
           : walkValue(item, false),
       );
     } else {
-      out[scrubSecrets(key)] = walkValue(value, textKeys.has(key));
+      const kept = walkValue(value, textKeys.has(key));
+      // The cut follows the scrub, so a secret that straddles the
+      // limit is replaced whole before anything is dropped.
+      out[scrubSecrets(key)] =
+        typeof kept === "string" && EVENT_PROMPT_KEY[eventName] === key
+          ? cutPromptText(kept)
+          : kept;
     }
   }
   out.redaction_version = REDACTION_VERSION;

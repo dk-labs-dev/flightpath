@@ -18,7 +18,8 @@ import {
 } from "../transcripts/index.js";
 import {
   preparePromptTextStatements,
-  setTurnPromptText,
+  promptTextColumns,
+  setTurnPromptColumns,
 } from "./prompt-text.js";
 import {
   findingDismissalMethods,
@@ -396,7 +397,11 @@ function redactStoredPromptTexts(db: DatabaseSync): void {
   db.exec("BEGIN");
   try {
     for (const row of rows) {
-      setTurnPromptText(st, row.id, scrubSecrets(row.prompt_text));
+      setTurnPromptColumns(
+        st,
+        row.id,
+        promptTextColumns(scrubSecrets(row.prompt_text)),
+      );
     }
     db.exec("COMMIT");
   } catch (error) {

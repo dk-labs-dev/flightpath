@@ -12,22 +12,25 @@ export interface PromptTextColumns {
   lines: number | null;
 }
 
+/** A prompt cut to the limit; call it on text that is already redacted. */
+export function cutPromptText(text: string): string {
+  if (text.length <= PROMPT_TEXT_LIMIT) {
+    return text;
+  }
+  const stored = text.slice(0, PROMPT_TEXT_LIMIT);
+  // The cut can land inside an astral character, leaving a lone
+  // high surrogate storage reads back as a replacement character.
+  const last = stored.charCodeAt(stored.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? stored.slice(0, -1) : stored;
+}
+
 /** A prompt text as its three turns columns, cut after redaction. */
 export function promptTextColumns(text: string | null): PromptTextColumns {
   if (text === null) {
     return { text: null, chars: null, lines: null };
   }
-  let stored = text.slice(0, PROMPT_TEXT_LIMIT);
-  if (text.length > PROMPT_TEXT_LIMIT) {
-    // The cut can land inside an astral character, leaving a lone
-    // high surrogate storage reads back as a replacement character.
-    const last = stored.charCodeAt(stored.length - 1);
-    if (last >= 0xd800 && last <= 0xdbff) {
-      stored = stored.slice(0, -1);
-    }
-  }
   return {
-    text: stored,
+    text: cutPromptText(text),
     chars: text.length,
     lines: text.length === 0 ? 0 : text.split("\n").length,
   };
@@ -58,13 +61,12 @@ export function preparePromptTextStatements(
   };
 }
 
-/** Store a prompt's text on its turn, replacing any earlier text. */
-export function setTurnPromptText(
+/** Store a prompt's text and figures on its turn, replacing any earlier. */
+export function setTurnPromptColumns(
   st: PromptTextStatements,
   turnId: number,
-  text: string | null,
+  columns: PromptTextColumns,
 ): void {
-  const columns = promptTextColumns(text);
   st.setTurnPrompt.run(columns.text, columns.chars, columns.lines, turnId);
 }
 

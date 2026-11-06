@@ -110,8 +110,12 @@ function storedTurn(storage: Storage, sessionId: string) {
   return onlyRow(rows, "the stored turn");
 }
 
-/** Store `prompt` through the hook path, as the daemon receives it. */
-function storeHookPrompt(storage: Storage, sessionId: string, prompt: string) {
+/** Deliver one hook event to the daemon's intake, in a started session. */
+function deliverHookEvent(
+  storage: Storage,
+  sessionId: string,
+  event: Record<string, unknown>,
+) {
   recordHookEvent(
     storage,
     {
@@ -123,19 +127,43 @@ function storeHookPrompt(storage: Storage, sessionId: string, prompt: string) {
     T0,
   );
   const result = ingestEnvelope(storage, {
-    id: `env-${sessionId}-prompt`,
+    id: `env-${sessionId}-event`,
     received_at: T0 + 1000,
     redaction_version: 1,
     plugin_version: "0.0.0",
-    event: {
-      hook_event_name: "UserPromptSubmit",
-      session_id: sessionId,
-      prompt_id: "p-1",
-      prompt,
-      cwd: "/home/user/proj-a",
-    },
+    event: { session_id: sessionId, cwd: "/home/user/proj-a", ...event },
   });
   expect(result).toBe("stored");
+}
+
+/**
+ * Store `prompt` through the hook path, as the daemon receives it:
+ * with the figures the hook measures before it redacts.
+ */
+function storeHookPrompt(storage: Storage, sessionId: string, prompt: string) {
+  deliverHookEvent(storage, sessionId, {
+    hook_event_name: "UserPromptSubmit",
+    prompt_id: "p-1",
+    prompt,
+    prompt_chars: prompt.length,
+    prompt_lines: prompt.split("\n").length,
+  });
+}
+
+/** The event one raw hook row of the session stored for `eventName`. */
+function rawHookEvent(storage: Storage, sessionId: string, eventName: string) {
+  const rows = queryRows(
+    storage.dbPath,
+    "SELECT body FROM raw_events WHERE session_id = ? AND source = 'hook'",
+    sessionId,
+  ) as { body: string }[];
+  const events = rows
+    .map(
+      (row) =>
+        (JSON.parse(row.body) as { event: Record<string, unknown> }).event,
+    )
+    .filter((event) => event.hook_event_name === eventName);
+  return onlyRow(events, `the stored ${eventName} event`);
 }
 
 /** Store `prompt` through a transcript the hooks never delivered. */
@@ -236,5 +264,100 @@ describe("prompt text storage", () => {
     const turn = storedTurn(world.storage, "sess-lines");
     expect(turn.prompt_text).toBe("a\n");
     expect(turn.prompt_lines).toBe(2);
+  });
+});
+
+describe("the raw event's prompt", () => {
+  it("is cut to 2,000 characters, as the turn's text is", () => {
+    const world = makeTranscriptWorld();
+    storeHookPrompt(world.storage, "sess-raw-long", "x".repeat(5_000));
+    const stored = rawHookEvent(
+      world.storage,
+      "sess-raw-long",
+      "UserPromptSubmit",
+    );
+    expect(stored.prompt).toBe("x".repeat(2_000));
+    const turn = storedTurn(world.storage, "sess-raw-long");
+    expect(turn.prompt_text).toBe("x".repeat(2_000));
+    expect(turn.prompt_chars).toBe(5_000);
+  });
+
+  it("is stored unchanged at 2,000 characters", () => {
+    const world = makeTranscriptWorld();
+    const prompt = "line\n".repeat(399) + "last!";
+    expect(prompt).toHaveLength(2_000);
+    storeHookPrompt(world.storage, "sess-raw-below", prompt);
+    const stored = rawHookEvent(
+      world.storage,
+      "sess-raw-below",
+      "UserPromptSubmit",
+    );
+    expect(stored.prompt).toBe(prompt);
+    expect(storedTurn(world.storage, "sess-raw-below").prompt_text).toBe(
+      prompt,
+    );
+  });
+
+  it("is cut before an emoji that straddles the limit", () => {
+    const world = makeTranscriptWorld();
+    const prompt = "a".repeat(1_999) + "😀" + "b".repeat(100);
+    storeHookPrompt(world.storage, "sess-raw-emoji", prompt);
+    const stored = rawHookEvent(
+      world.storage,
+      "sess-raw-emoji",
+      "UserPromptSubmit",
+    );
+    expect(stored.prompt).toBe("a".repeat(1_999));
+  });
+
+  it("scrubs a secret that straddles the limit before it is cut", () => {
+    const world = makeTranscriptWorld();
+    const key = "AKIA" + "1234567890ABCDEF";
+    const prompt = "a".repeat(1_989) + " " + key + " and more text after it";
+    expect(prompt.indexOf(key)).toBeLessThan(2_000);
+    expect(prompt.indexOf(key) + key.length).toBeGreaterThan(2_000);
+    storeHookPrompt(world.storage, "sess-raw-secret", prompt);
+    const stored = rawHookEvent(
+      world.storage,
+      "sess-raw-secret",
+      "UserPromptSubmit",
+    );
+    const expected = "a".repeat(1_989) + " [redacted:";
+    expect(stored.prompt).toBe(expected);
+    expect(storedTurn(world.storage, "sess-raw-secret").prompt_text).toBe(
+      expected,
+    );
+  });
+
+  it("is cut for a slash command's arguments too", () => {
+    const world = makeTranscriptWorld();
+    deliverHookEvent(world.storage, "sess-raw-args", {
+      hook_event_name: "UserPromptExpansion",
+      command_name: "review",
+      command_args: "w".repeat(5_000),
+    });
+    const stored = rawHookEvent(
+      world.storage,
+      "sess-raw-args",
+      "UserPromptExpansion",
+    );
+    expect(stored.command_args).toBe("w".repeat(2_000));
+  });
+
+  it("holds none of a transcript prompt's text", async () => {
+    const world = seedImportWorld();
+    await storeTranscriptPrompt(
+      world,
+      "sess-raw-transcript",
+      "q".repeat(5_000),
+    );
+    const rows = queryRows(
+      world.storage.dbPath,
+      "SELECT body FROM raw_events WHERE session_id = 'sess-raw-transcript' AND source = 'transcript'",
+    ) as { body: string }[];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.body).not.toContain("qqqq");
+    }
   });
 });
