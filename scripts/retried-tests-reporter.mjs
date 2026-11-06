@@ -9,14 +9,13 @@ import { appendFileSync } from "node:fs";
 import process from "node:process";
 
 function collect(task, trail, lines) {
-  const here = task.type === "test" ? trail : [...trail, task.name];
-  if (
-    task.type === "test" &&
-    task.result?.state === "pass" &&
-    (task.result?.retryCount ?? 0) > 0
-  ) {
-    lines.push(`- ${[...trail, task.name].join(" > ")}`);
+  if (task.type === "test") {
+    if (task.result?.state === "pass" && (task.result?.retryCount ?? 0) > 0) {
+      lines.push(`- ${[...trail, task.name].join(" > ")}`);
+    }
+    return;
   }
+  const here = [...trail, task.name];
   for (const child of task.tasks ?? []) {
     collect(child, here, lines);
   }
