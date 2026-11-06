@@ -49,9 +49,15 @@ describe("the hooks in hooks.json", () => {
     }
   });
 
-  it("register each of the four entries", () => {
+  it("register each of the five entries", () => {
     expect(new Set(hooks.map(entryOf))).toEqual(
-      new Set(["hook.js", "notice.js", "submit-command.js", "command.js"]),
+      new Set([
+        "hook.js",
+        "notice.js",
+        "submit-command.js",
+        "command.js",
+        "line.js",
+      ]),
     );
   });
 });
@@ -63,6 +69,7 @@ describe("the version gate on the built entries", () => {
     "command.js",
     "notice.js",
     "submit-command.js",
+    "line.js",
     "command-handler.js",
   ];
 

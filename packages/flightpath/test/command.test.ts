@@ -669,7 +669,10 @@ describe("the hooks.json matchers", () => {
   ) as {
     hooks: Record<
       string,
-      { matcher: string; hooks: { command: string; args: string[] }[] }[]
+      {
+        matcher: string;
+        hooks: { command: string; args: string[]; async?: boolean }[];
+      }[]
     >;
   };
 
@@ -712,6 +715,27 @@ describe("the hooks.json matchers", () => {
     expect(
       matcherFor("UserPromptSubmit", "dist/submit-command.js"),
     ).toBeTruthy();
+  });
+
+  // The line has to reach the terminal before the prompt returns, so
+  // it cannot be async; it is its own entry so the recording hook
+  // stays async.
+  it("registers the terminal line on Stop as a synchronous exec-form hook", () => {
+    const stop = hooksConfig.hooks.Stop ?? [];
+    const lineHooks = stop.flatMap((entry) =>
+      entry.hooks.filter((hook) =>
+        hook.args.some((arg) => arg.endsWith("/line.js")),
+      ),
+    );
+    expect(lineHooks).toEqual([
+      {
+        type: "command",
+        command: "node",
+        args: ["${CLAUDE_PLUGIN_ROOT}/dist/line.js"],
+      },
+    ]);
+    expect(stop).toHaveLength(2);
+    expect(stop[0]?.hooks[0]?.async).toBe(true);
   });
 
   it("the startup notice matcher is the exact list it reads as", () => {
