@@ -54,6 +54,33 @@ export function makeTranscriptWorld(
   return { root, dataDir, configDir, storage, follower };
 }
 
+/**
+ * A transcript world whose storage refuses the first write of the
+ * named request, so the chunk carrying it fails and rolls back.
+ */
+export function makeTranscriptWorldFailingOnce(
+  requestId: string,
+): TranscriptWorld {
+  const world = makeTranscriptWorld();
+  let failed = false;
+  const flaky: Storage = {
+    ...world.storage,
+    upsertRequest: (input) => {
+      if (input.requestId === requestId && !failed) {
+        failed = true;
+        throw new Error("storage is down");
+      }
+      return world.storage.upsertRequest(input);
+    },
+  };
+  const follower = createTranscriptFollower(flaky, {
+    dataDir: world.dataDir,
+    configDir: world.configDir,
+    settings: () => defaultSettings(),
+  });
+  return { ...world, follower };
+}
+
 /** Write lines to the live session's transcript and follow them. */
 export async function followLines(
   world: TranscriptWorld,
