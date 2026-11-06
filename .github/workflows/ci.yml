@@ -193,6 +193,8 @@ jobs:
         shell: bash
         run: |
           if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
+            echo "Tests that passed only on retry:"
+            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
             {
               echo "### Passed only on retry"
               echo
@@ -232,6 +234,8 @@ jobs:
         shell: bash
         run: |
           if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
+            echo "Tests that passed only on retry:"
+            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
             {
               echo "### Passed only on retry"
               echo
@@ -298,6 +302,8 @@ jobs:
         shell: bash
         run: |
           if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
+            echo "Tests that passed only on retry:"
+            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
             {
               echo "### Passed only on retry"
               echo
@@ -338,6 +344,8 @@ jobs:
         shell: bash
         run: |
           if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
+            echo "Tests that passed only on retry:"
+            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
             {
               echo "### Passed only on retry"
               echo
