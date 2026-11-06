@@ -37,6 +37,7 @@ type ReleasePlan = {
 
 type Marketplace = {
   name: string;
+  owner: { name: string };
   plugins: { name: string; source: string }[];
 };
 
@@ -228,6 +229,20 @@ describe("channel marketplaces", () => {
 
   it("gives the next channel its own marketplace name", () => {
     expect(channelMarketplace("next").name).toBe("flightpath-next");
+  });
+
+  it("names the same owner as the marketplace this repository ships", () => {
+    const root = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "..",
+    );
+    const shipped = JSON.parse(
+      readFileSync(join(root, ".claude-plugin", "marketplace.json"), "utf8"),
+    ) as Marketplace;
+    expect(channelMarketplace("release").owner).toEqual(shipped.owner);
+    expect(channelMarketplace("next").owner).toEqual(shipped.owner);
   });
 
   it("refuses a channel it does not know", () => {

@@ -96,7 +96,8 @@ export function copyPlugin(root, target) {
 }
 
 // The marketplace file a channel carries. Its one entry resolves to
-// the plugin folder beside it.
+// the plugin folder beside it, and its owner is the one the
+// marketplace on `main` names.
 export function channelMarketplace(channel) {
   const known = CHANNELS[channel];
   if (known === undefined) {
@@ -104,7 +105,7 @@ export function channelMarketplace(channel) {
   }
   return {
     name: known.marketplaceName,
-    owner: { name: "Flightpath" },
+    owner: { name: "dk-labs-dev" },
     plugins: [
       {
         name: "flightpath",
