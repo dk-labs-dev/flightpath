@@ -56,8 +56,8 @@ describe("formatTokens", () => {
 });
 
 describe("estimatedTokens", () => {
-  it("counts 2.9 characters to a token, as /context did for a 6,474-character file", () => {
-    expect(estimatedTokens(6_474)).toBe(2_233);
+  it("counts 2.9 characters to a token, for a 6,000-character file", () => {
+    expect(estimatedTokens(6_000)).toBe(2_069);
   });
 
   it("rounds up to a whole token", () => {

@@ -2,7 +2,7 @@
 // data in the store by id, so a stream change re-renders the
 // row it touched and its turn's header — never the whole
 // tree. The tile's glyph and tone say the kind at a glance;
-// the sentence is the row's headline, as the brief asks.
+// the sentence is the row's headline.
 
 import { memo, useEffect } from "react";
 

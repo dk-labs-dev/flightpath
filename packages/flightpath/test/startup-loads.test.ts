@@ -33,16 +33,16 @@ import { parseTranscriptLine } from "../src/transcripts/parse.js";
 // What Claude Code adds at session start, named: the parse
 // of the startup attachment kinds, the loads the follower
 // writes from them, and the instruction file's size filled
-// from its transcript entry. The entries are one
-// session's startup entries in full, in the order the
-// transcript carries them: a hook's output of 1,207 (its
-// stdout ran to 1,208 — not what reached the model), an
-// empty second hook, the system message, the first prompt,
-// the deferred tools' delta (132 names, lines summing to
-// 4,160), the agent listing (lines summing to 2,527), two
-// servers' instructions of 1,893 and 1,822, a skills
-// listing of 24,851 characters over 49 skills, and an
-// instruction file of 6,474. Contents are a marker filler
+// from its transcript entry. The entries are an example
+// session's startup entries in the order a transcript
+// carries them: a hook's output of 1,200 characters (its
+// stdout runs to 1,201, which is not what reaches the
+// model), an empty second hook, the system message, the
+// first prompt, the deferred tools' delta (100 names, lines
+// summing to 4,000), the agent listing (lines summing to
+// 2,500), two servers' instructions of 1,500 each, a skills
+// listing of 20,000 characters over 40 skills, and an
+// instruction file of 6,000. Contents are a marker filler
 // of the same lengths, so a leak of any content is
 // greppable; names are example names.
 
@@ -70,11 +70,11 @@ const HOOK_LINE = attachmentLine(T0, {
   type: "hook_success",
   hookName: "SessionStart:startup",
   hookEvent: "SessionStart",
-  content: filler(1_207),
-  stdout: filler(1_208),
+  content: filler(1_200),
+  stdout: filler(1_201),
   stderr: "",
   exitCode: 0,
-  command: '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start" "${DROID_PLUGIN_ROOT}"',
+  command: '"${CLAUDE_PLUGIN_ROOT}/hooks/start"',
   durationMs: 1_372,
 });
 
@@ -114,20 +114,12 @@ const PROMPT_LINE = JSON.stringify({
   origin: { kind: "human" },
 });
 
-/** The deferred tools' lines, at the recorded lengths. */
-const DEFERRED_LINE_LENGTHS = [
-  16, 12, 10, 10, 8, 10, 15, 13, 13, 12, 12, 20, 7, 12, 16, 22, 19, 13, 11, 8,
-  8, 9, 46, 34, 50, 40, 26, 30, 38, 36, 34, 28, 32, 27, 34, 26, 35, 23, 35, 24,
-  33, 26, 27, 28, 30, 29, 33, 28, 35, 30, 26, 37, 24, 31, 35, 25, 25, 27, 35,
-  34, 42, 27, 39, 28, 30, 37, 36, 29, 32, 36, 43, 33, 21, 47, 44, 33, 44, 47,
-  47, 35, 37, 33, 28, 44, 46, 48, 41, 42, 38, 35, 22, 40, 40, 33, 34, 34, 34,
-  33, 33, 32, 34, 34, 45, 44, 55, 41, 52, 33, 40, 32, 41, 29, 41, 30, 39, 32,
-  33, 36, 35, 39, 34, 41, 36, 32, 40, 34, 36, 43, 42, 35, 41, 52,
-];
+/** The deferred tools' lines: 100 of 40 characters. */
+const DEFERRED_LINE_LENGTHS = Array.from({ length: 100 }, () => 40);
 
 const DEFERRED_LINE = attachmentLine(T0 + 204_753, {
   type: "deferred_tools_delta",
-  addedNames: Array.from({ length: 132 }, (_, i) => `example_tool_${i + 1}`),
+  addedNames: Array.from({ length: 100 }, (_, i) => `example_tool_${i + 1}`),
   addedLines: DEFERRED_LINE_LENGTHS.map(filler),
   removedNames: [],
   wireHiddenNames: [],
@@ -149,7 +141,7 @@ const AGENT_LINE = attachmentLine(T0 + 204_753, {
     "example-agent-5",
     "example-agent-6",
   ],
-  addedLines: [132, 1_072, 539, 309, 364, 111].map(filler),
+  addedLines: [100, 1_000, 500, 400, 300, 200].map(filler),
   builtInTypes: [6, 17, 7, 15, 4, 16].map((n) => "x".repeat(n)),
   builtInPluginTypes: [],
   removedTypes: [],
@@ -161,26 +153,26 @@ const AGENT_LINE = attachmentLine(T0 + 204_753, {
 const MCP_LINE = attachmentLine(T0 + 204_753, {
   type: "mcp_instructions_delta",
   addedNames: ["example-server-1", "example-server-2"],
-  addedBlocks: [filler(1_893), filler(1_822)],
+  addedBlocks: [filler(1_500), filler(1_500)],
   removedNames: [],
 });
 
 const SKILL_NAMES = Array.from(
-  { length: 49 },
+  { length: 40 },
   (_, i) => `example-skill-${i + 1}`,
 );
 
 const SKILL_LINE = attachmentLine(T0 + 204_753, {
   type: "skill_listing",
-  content: filler(24_851),
-  skillCount: 49,
+  content: filler(20_000),
+  skillCount: 40,
   isInitial: true,
   names: SKILL_NAMES,
 });
 
 const INSTRUCTIONS_LINE = attachmentLine(T0 + 204_901, {
   type: "instructions",
-  files: [{ type: "User", path: INSTRUCTIONS_PATH, content: filler(6_474) }],
+  files: [{ type: "User", path: INSTRUCTIONS_PATH, content: filler(6_000) }],
 });
 
 const STARTUP_LINES = [
@@ -207,26 +199,26 @@ describe("the startup attachments, parsed", () => {
         {
           kind: "skill-listing",
           name: null,
-          count: 49,
-          chars: 24_851,
+          count: 40,
+          chars: 20_000,
           names: SKILL_NAMES,
         },
       ],
       [
         MCP_LINE,
-        { kind: "mcp-instructions", name: null, count: 2, chars: 3_715 },
+        { kind: "mcp-instructions", name: null, count: 2, chars: 3_000 },
       ],
       [
         AGENT_LINE,
-        { kind: "agent-listing", name: null, count: null, chars: 2_527 },
+        { kind: "agent-listing", name: null, count: null, chars: 2_500 },
       ],
       [
         DEFERRED_LINE,
         {
           kind: "deferred-tool-names",
           name: null,
-          count: 132,
-          chars: 4_160,
+          count: 100,
+          chars: 4_000,
         },
       ],
       [
@@ -235,14 +227,14 @@ describe("the startup attachments, parsed", () => {
           kind: "hook-output",
           name: "SessionStart:startup",
           count: null,
-          chars: 1_207,
+          chars: 1_200,
         },
       ],
       [
         INSTRUCTIONS_LINE,
         {
           kind: "instructions",
-          files: [{ path: INSTRUCTIONS_PATH, chars: 6_474 }],
+          files: [{ path: INSTRUCTIONS_PATH, chars: 6_000 }],
         },
       ],
     ];
@@ -320,9 +312,9 @@ function seedInstructionsHook(
   );
 }
 
-/** The recorded start, followed; and a step after the
+/** The example start, followed; and a step after the
  * entries, measured by a request carrying a recorded shape
- * at the session's recorded 75,800 tokens. */
+ * at 75,000 tokens. */
 async function replayWorld(): Promise<TranscriptWorld> {
   const world = makeTranscriptWorld();
   seedSessionStart(world);
@@ -358,7 +350,7 @@ async function replayWorld(): Promise<TranscriptWorld> {
     sessionId: "sess-live",
     turnId,
     startedAt: T0 + 240_000,
-    input: 75_800,
+    input: 75_000,
     output: 100,
     shapeHash: "shape-replay",
   });
@@ -409,7 +401,7 @@ describe("the startup attachments, followed", () => {
         kind: "hook-output",
         name: "SessionStart:startup",
         filePath: null,
-        sizeBytes: 1_207,
+        sizeBytes: 1_200,
         itemCount: null,
         source: "transcript",
       },
@@ -418,8 +410,8 @@ describe("the startup attachments, followed", () => {
         name: null,
         filePath: INSTRUCTIONS_PATH,
         // No size from the hook; the transcript entry's
-        // 6,474 filled it.
-        sizeBytes: 6_474,
+        // 6,000 filled it.
+        sizeBytes: 6_000,
         itemCount: null,
         source: "hook",
       },
@@ -427,15 +419,15 @@ describe("the startup attachments, followed", () => {
         kind: "deferred-tool-names",
         name: null,
         filePath: null,
-        sizeBytes: 4_160,
-        itemCount: 132,
+        sizeBytes: 4_000,
+        itemCount: 100,
         source: "transcript",
       },
       {
         kind: "agent-listing",
         name: null,
         filePath: null,
-        sizeBytes: 2_527,
+        sizeBytes: 2_500,
         itemCount: null,
         source: "transcript",
       },
@@ -443,7 +435,7 @@ describe("the startup attachments, followed", () => {
         kind: "mcp-instructions",
         name: null,
         filePath: null,
-        sizeBytes: 3_715,
+        sizeBytes: 3_000,
         itemCount: 2,
         source: "transcript",
       },
@@ -451,8 +443,8 @@ describe("the startup attachments, followed", () => {
         kind: "skill-listing",
         name: null,
         filePath: null,
-        sizeBytes: 24_851,
-        itemCount: 49,
+        sizeBytes: 20_000,
+        itemCount: 40,
         source: "transcript",
       },
     ]);
@@ -461,7 +453,7 @@ describe("the startup attachments, followed", () => {
     expect(allStoredText(world.storage)).not.toContain("MARKERFILLER");
   });
 
-  it("replays the recorded start: the step after the entries reads the split by name", async () => {
+  it("replays the example start: the step after the entries reads the split by name", async () => {
     const world = await replayWorld();
     const result = readReplayStep(world);
     expect(result.fixedLoad).toEqual(
@@ -477,19 +469,19 @@ describe("the startup attachments, followed", () => {
     );
   });
 
-  it("replays the recorded start: the remainder counts each part once", async () => {
+  it("replays the example start: the remainder counts each part once", async () => {
     const world = await replayWorld();
     const result = readReplayStep(world);
     // The named share, from the followed entries alone:
     // the items (the prompt's 13, the reply's 100 and the
     // step's 42,740; the file is sized in the panel, not
-    // here) and the panel's 30,673 with the file's 2,233
-    // leave 2,274.
+    // here) and the panel's 28,522 with the file's 2,069
+    // leave 3,625.
     expect(result.totals).toEqual({
-      measured: 75_800,
+      measured: 75_000,
       items: 42_853,
-      named: 73_526,
-      other: 2_274,
+      named: 71_375,
+      other: 3_625,
     });
   });
 
@@ -531,7 +523,7 @@ describe("the skills listing's names, followed", () => {
     const [row] = world.storage
       .loadRows("sess-live")
       .filter((load) => load.kind === "skill-listing");
-    expect(row).toMatchObject({ itemCount: 49, names: SKILL_NAMES });
+    expect(row).toMatchObject({ itemCount: 40, names: SKILL_NAMES });
   });
 
   it("builds the finding from the first of three listings", async () => {
@@ -602,7 +594,7 @@ function userLine(
 
 const SUBAGENT_FILES = [
   { path: "/home/example/garden/CLAUDE.md", length: 1_200 },
-  { path: "/home/example/garden/beds/CLAUDE.md", length: 6_474 },
+  { path: "/home/example/garden/beds/CLAUDE.md", length: 6_000 },
 ];
 
 /** A meta user entry of the given length that opens as given. */
@@ -731,7 +723,7 @@ describe("a subagent's start, followed", () => {
         kind: "instructions",
         name: null,
         filePath: SUBAGENT_FILES[1]?.path,
-        sizeBytes: 6_474,
+        sizeBytes: 6_000,
       },
       { kind: "skill-listing", name: null, filePath: null, sizeBytes: 5_000 },
     ]);
@@ -902,9 +894,9 @@ describe("the startup load write", () => {
       sessionId: "sess-live",
       kind: "skill-listing",
       name: null,
-      count: 49,
+      count: 40,
       names: null,
-      chars: 24_851,
+      chars: 20_000,
       at: T0 + 400,
       branchId: null,
     };

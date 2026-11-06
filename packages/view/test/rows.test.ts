@@ -293,7 +293,7 @@ describe("row helpers", () => {
     expect(byKind.get("turn")).toBe("toggle");
     expect(byKind.get("branch")).toBe("open");
     expect(byKind.get("human")).toBeNull();
-    expect(byKind.get("event")).toBeNull();
+    expect(byKind.get("event")).toBe("open");
     expect(byKind.get("waiting")).toBeNull();
   });
 

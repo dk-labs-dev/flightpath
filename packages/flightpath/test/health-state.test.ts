@@ -142,7 +142,7 @@ describe("health state", () => {
     ).toBe("unexpected error");
   });
 
-  it("waits in the brief's words, with the oldest event's age", () => {
+  it("words the wait with the oldest event's age", () => {
     const now = AT + 9 * 60_000;
     expect(waitingLine(health({ buffered: 214, oldestAt: AT }), now)).toBe(
       "214 events are waiting on this machine, the oldest from 9 minutes ago. Nothing is lost yet: they're stored the moment the recorder starts.",
@@ -153,7 +153,7 @@ describe("health state", () => {
     expect(waitingLine(health({}), now)).toBeNull();
   });
 
-  it("drops in the brief's words, the count agreeing with its noun", () => {
+  it("words the drop with the count agreeing with its noun", () => {
     expect(droppedLine(1)).toBe(
       "About 1 event dropped: the buffer was full; transcripts still cover these sessions.",
     );

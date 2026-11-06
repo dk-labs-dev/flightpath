@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   CONTEXT_AT_STEP_4,
   CONTEXT_AT_STEP_6,
+  CONTEXT_AT_STEP_8,
 } from "../../view/test/context-fixture.js";
 import {
   contextAtStep,
@@ -246,13 +247,15 @@ function atStep(
 describe("context at a step, on the planted fixture", () => {
   it("matches the fixture checked in for the view's tests", () => {
     // The view package's lens tests run against a checked-in
-    // copy of these two answers; if the seed or the read
+    // copy of these three answers; if the seed or the read
     // moves, this fails here rather than letting the copy
     // drift from what the server gives.
     const { storage, db } = makeWorld();
     const S = seedPlantedSession(db);
+    seedStepAfterCompaction(db, S);
     expect(atStep(storage, S, 4)).toEqual(CONTEXT_AT_STEP_4);
     expect(atStep(storage, S, 6)).toEqual(CONTEXT_AT_STEP_6);
+    expect(atStep(storage, S, 8)).toEqual(CONTEXT_AT_STEP_8);
   });
 
   it("lists what had been given by step 4, in the order it entered", () => {
@@ -1619,15 +1622,15 @@ describe("the compaction view", () => {
 });
 
 describe("startup additions and the fixed load counted once", () => {
-  // A session shaped around the startup additions at their
-  // full sizes (the skills listing's 24,851 characters, 49
-  // skills; the deferred tools' 4,160 over 132 names; two
-  // servers' instructions, 3,715; the agent listing's
-  // 2,527; one hook's 1,207; the instruction file's 6,474),
-  // and the step is measured at 75,800 tokens.
+  // A session shaped around example startup additions (a
+  // skills listing of 20,000 characters over 40 skills; the
+  // deferred tools' 4,000 over 100 names; two servers'
+  // instructions, 3,000; the agent listing's 2,500; one
+  // hook's 1,200; an instruction file of 6,000), with the
+  // step measured at 75,000 tokens.
   function seedStartupWorld(
     measuredTokens: number,
-    instructionBytes: number | null = 6_474,
+    instructionBytes: number | null = 6_000,
   ): {
     storage: Storage;
     db: DatabaseSync;
@@ -1660,7 +1663,7 @@ describe("startup additions and the fixed load counted once", () => {
       name: "SessionStart:startup",
       occurredAt: 400,
       source: "transcript",
-      sizeBytes: 1_207,
+      sizeBytes: 1_200,
     });
     seedLoad(db, {
       id: 3,
@@ -1668,8 +1671,8 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "skill-listing",
       occurredAt: 500,
       source: "transcript",
-      sizeBytes: 24_851,
-      itemCount: 49,
+      sizeBytes: 20_000,
+      itemCount: 40,
     });
     seedLoad(db, {
       id: 4,
@@ -1677,7 +1680,7 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "mcp-instructions",
       occurredAt: 600,
       source: "transcript",
-      sizeBytes: 3_715,
+      sizeBytes: 3_000,
       itemCount: 2,
     });
     seedLoad(db, {
@@ -1686,7 +1689,7 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "agent-listing",
       occurredAt: 700,
       source: "transcript",
-      sizeBytes: 2_527,
+      sizeBytes: 2_500,
     });
     seedLoad(db, {
       id: 6,
@@ -1694,8 +1697,8 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "deferred-tool-names",
       occurredAt: 800,
       source: "transcript",
-      sizeBytes: 4_160,
-      itemCount: 132,
+      sizeBytes: 4_000,
+      itemCount: 100,
     });
     seedStep(db, {
       id: 1,
@@ -1715,9 +1718,9 @@ describe("startup additions and the fixed load counted once", () => {
   function seedSubagentStartup(db: DatabaseSync, sessionId: string): void {
     const branchId = seedBranch(db, { sessionId, agentId: "a1" });
     const listings = [
-      { kind: "skill-listing", sizeBytes: 24_851, itemCount: 49 },
-      { kind: "mcp-instructions", sizeBytes: 3_715, itemCount: 2 },
-      { kind: "agent-listing", sizeBytes: 2_527, itemCount: null },
+      { kind: "skill-listing", sizeBytes: 20_000, itemCount: 40 },
+      { kind: "mcp-instructions", sizeBytes: 3_000, itemCount: 2 },
+      { kind: "agent-listing", sizeBytes: 2_500, itemCount: null },
       { kind: "deferred-tool-names", sizeBytes: 3_000, itemCount: 24 },
     ];
     listings.forEach((listing, index) => {
@@ -1733,7 +1736,7 @@ describe("startup additions and the fixed load counted once", () => {
   }
 
   it("lists the epoch's startup additions in the split, largest first", () => {
-    const { storage, S } = seedStartupWorld(75_800);
+    const { storage, S } = seedStartupWorld(75_000);
     const result = atStep(storage, S, 1);
     expect(result.fixedLoad).toEqual(
       startupSplit({
@@ -1749,7 +1752,7 @@ describe("startup additions and the fixed load counted once", () => {
   });
 
   it("lists each kind once when a subagent re-sent its own listings", () => {
-    const { storage, db, S } = seedStartupWorld(75_800);
+    const { storage, db, S } = seedStartupWorld(75_000);
     seedSubagentStartup(db, S);
     expect(atStep(storage, S, 1).fixedLoad).toEqual(
       startupSplit({
@@ -1765,24 +1768,23 @@ describe("startup additions and the fixed load counted once", () => {
   });
 
   it("counts the fixed load once: other is what neither the items nor the panel explain", () => {
-    const { storage, S } = seedStartupWorld(75_800);
+    const { storage, S } = seedStartupWorld(75_000);
     const result = atStep(storage, S, 1);
     // Items: the prompt (14), the reply (100) and the step's
     // result (42,739) — 42,853. The panel holds the instruction
-    // file (2,233) with the rest of the shape (13,794 + 2,070)
-    // and the startup additions (12,576) — 30,673 — and the
+    // file (2,069) with the rest of the shape (13,794 + 2,070)
+    // and the startup additions (10,589) — 28,522 — and the
     // item list names the file without a size. What is left is
     // history Flightpath can't name,
-    // 75,800 − 42,853 − 30,673 = 2,274.
+    // 75,000 − 42,853 − 28,522 = 3,625.
     expect(result.totals).toEqual({
-      measured: 75_800,
+      measured: 75_000,
       items: 42_853,
-      named: 73_526,
-      other: 2_274,
+      named: 71_375,
+      other: 3_625,
     });
-    // The named share of the measured context: on the
-    // recorded session this clears three fifths, where the
-    // unnamed remainder once stood at 62.7K of 75.8K.
+    // The named share of the measured context clears three
+    // fifths.
     const named =
       (result.totals.measured! - result.totals.other!) /
       result.totals.measured!;
@@ -1790,16 +1792,16 @@ describe("startup additions and the fixed load counted once", () => {
   });
 
   it("counts the file once when its size is unknown, too", () => {
-    const { storage, S } = seedStartupWorld(75_800, null);
+    const { storage, S } = seedStartupWorld(75_000, null);
     const result = atStep(storage, S, 1);
     // The file's size was never recorded, so it stands in
     // neither sum: the items are 42,853 (the counted-once
-    // seed's 45,086 less the file's 2,233), the panel's
-    // total is 28,440, and the remainder grows by the
-    // file's whole estimate: 75,800 − 42,853 − 28,440.
+    // seed's 44,922 less the file's 2,069), the panel's
+    // total is 26,453, and the remainder grows by the
+    // file's whole estimate: 75,000 − 42,853 − 26,453.
     expect(result.fixedLoad).toMatchObject({
       kind: "split",
-      total: 28_440,
+      total: 26_453,
       instructions: [
         {
           loadId: 1,
@@ -1810,10 +1812,10 @@ describe("startup additions and the fixed load counted once", () => {
       ],
     });
     expect(result.totals).toEqual({
-      measured: 75_800,
+      measured: 75_000,
       items: 42_853,
-      named: 71_293,
-      other: 4_507,
+      named: 69_306,
+      other: 5_694,
     });
   });
 
@@ -1848,8 +1850,8 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "skill-listing",
       occurredAt: 500,
       source: "transcript",
-      sizeBytes: 24_851,
-      itemCount: 49,
+      sizeBytes: 20_000,
+      itemCount: 40,
     });
     seedStep(db, {
       id: 1,
@@ -1870,8 +1872,8 @@ describe("startup additions and the fixed load counted once", () => {
       kind: "skill-listing",
       occurredAt: 5_000,
       source: "transcript",
-      sizeBytes: 24_851,
-      itemCount: 49,
+      sizeBytes: 20_000,
+      itemCount: 40,
     });
     seedStep(db, {
       id: 2,
@@ -1890,9 +1892,9 @@ describe("startup additions and the fixed load counted once", () => {
     const listing = {
       kind: "skill-listing",
       name: null,
-      count: 49,
-      chars: 24_851,
-      tokens: 8_570,
+      count: 40,
+      chars: 20_000,
+      tokens: 6_897,
       fromContext: false,
     };
     const before = atStep(storage, S, 1);
@@ -1909,9 +1911,8 @@ describe("startup additions and the fixed load counted once", () => {
   });
 
   describe("with a /context report", () => {
-    // The sizes of the report in the recorded start, as it
-    // wrote them (system prompt 2.8k, skills 8.3k, MCP server
-    // instructions 1.3k).
+    // Example sizes for the report, as it writes them (system
+    // prompt 2.8k, skills 8.3k, MCP server instructions 1.3k).
     function recordReport(
       storage: Storage,
       sessionId: string,
@@ -1937,10 +1938,10 @@ describe("startup additions and the fixed load counted once", () => {
 
     const REPORTED_STARTUP = [
       { loadId: 3, tokens: 8_300, fromContext: true },
-      { loadId: 6, tokens: 1_435, fromContext: false },
+      { loadId: 6, tokens: 1_380, fromContext: false },
       { loadId: 4, tokens: 1_300, fromContext: true },
-      { loadId: 5, tokens: 872, fromContext: false },
-      { loadId: 2, tokens: 417, fromContext: false },
+      { loadId: 5, tokens: 863, fromContext: false },
+      { loadId: 2, tokens: 414, fromContext: false },
     ];
 
     function skillsRow(result: ContextAtStep): unknown {
@@ -1955,7 +1956,7 @@ describe("startup additions and the fixed load counted once", () => {
     }
 
     it("sizes the system prompt, the skills listing and the servers' instructions by the report, and the rest by estimate", () => {
-      const { storage, S } = seedStartupWorld(75_800);
+      const { storage, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500);
       const result = atStep(storage, S, 1);
       expect(result.fixedLoad).toMatchObject({
@@ -1964,31 +1965,31 @@ describe("startup additions and the fixed load counted once", () => {
           { name: "Read", tokens: 1_380 },
           { name: "Bash", tokens: 690 },
         ],
-        instructions: [{ tokens: 2_233 }],
+        instructions: [{ tokens: 2_069 }],
       });
       expect(skillsRow(result)).toEqual(REPORTED_STARTUP);
     });
 
     it("keeps the report's figures when a subagent re-sent its own listings", () => {
-      const { storage, db, S } = seedStartupWorld(75_800);
+      const { storage, db, S } = seedStartupWorld(75_000);
       seedSubagentStartup(db, S);
       recordReport(storage, S, 1_500);
       expect(skillsRow(atStep(storage, S, 1))).toEqual(REPORTED_STARTUP);
     });
 
     it("adds the report's sizes into the panel's total and the remainder", () => {
-      const { storage, S } = seedStartupWorld(75_800);
+      const { storage, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500);
       const result = atStep(storage, S, 1);
-      // 2,800 + 1,380 + 690 + 2,233 + (8,300 + 1,435 + 1,300 +
-      // 872 + 417) = 19,427, so the remainder is
-      // 75,800 − 42,853 − 19,427.
-      expect(result.fixedLoad).toMatchObject({ total: 19_427 });
+      // 2,800 + 1,380 + 690 + 2,069 + (8,300 + 1,380 + 1,300 +
+      // 863 + 414) = 19,196, so the remainder is
+      // 75,000 − 42,853 − 19,196.
+      expect(result.fixedLoad).toMatchObject({ total: 19_196 });
       expect(result.totals).toEqual({
-        measured: 75_800,
+        measured: 75_000,
         items: 42_853,
-        named: 62_280,
-        other: 13_520,
+        named: 62_049,
+        other: 12_951,
       });
     });
 
@@ -1999,7 +2000,7 @@ describe("startup additions and the fixed load counted once", () => {
     }
 
     it("shares the report's system tools out so the definitions sum to it exactly", () => {
-      const { storage, S } = seedStartupWorld(75_800);
+      const { storage, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500, "claude-sonnet-4-6", 25_300);
       const result = atStep(storage, S, 1);
       expect(toolsOf(result)).toMatchObject({
@@ -2012,7 +2013,7 @@ describe("startup additions and the fixed load counted once", () => {
     });
 
     it("leaves a server's tools unscaled and shares the rest of the total among the others", () => {
-      const { storage, db, S } = seedStartupWorld(75_800);
+      const { storage, db, S } = seedStartupWorld(75_000);
       seedRequestShape(db, {
         hash: "shape-mcp",
         systemBytes: 40_000,
@@ -2032,7 +2033,7 @@ describe("startup additions and the fixed load counted once", () => {
     });
 
     it("keeps the estimates when no report gave the tools", () => {
-      const { storage, S } = seedStartupWorld(75_800);
+      const { storage, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500);
       expect(toolsOf(atStep(storage, S, 1))).toMatchObject({
         toolsReported: null,
@@ -2041,7 +2042,7 @@ describe("startup additions and the fixed load counted once", () => {
     });
 
     it("keeps the estimates when the report came before a compaction behind the step", () => {
-      const { storage, db, S } = seedStartupWorld(75_800);
+      const { storage, db, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500, "claude-sonnet-4-6", 25_300);
       seedSegment(db, { sessionId: S, kind: "compact", startedAt: 2_500 });
       expect(toolsOf(atStep(storage, S, 1))).toMatchObject({
@@ -2050,7 +2051,7 @@ describe("startup additions and the fixed load counted once", () => {
     });
 
     it("leaves every size an estimate when the report is another model's", () => {
-      const { storage, S } = seedStartupWorld(75_800);
+      const { storage, S } = seedStartupWorld(75_000);
       recordReport(storage, S, 1_500, "claude-opus-5-5");
       const result = atStep(storage, S, 1);
       expect(result.fixedLoad).toMatchObject({
@@ -2058,7 +2059,7 @@ describe("startup additions and the fixed load counted once", () => {
       });
       expect(skillsRow(result)).toContainEqual({
         loadId: 3,
-        tokens: 8_570,
+        tokens: 6_897,
         fromContext: false,
       });
     });
@@ -2067,7 +2068,7 @@ describe("startup additions and the fixed load counted once", () => {
       const { storage, S } = seedEpochsWorld();
       recordReport(storage, S, 6_500);
       expect(skillsRow(atStep(storage, S, 1))).toEqual([
-        { loadId: 1, tokens: 8_570, fromContext: false },
+        { loadId: 1, tokens: 6_897, fromContext: false },
       ]);
       expect(skillsRow(atStep(storage, S, 2))).toEqual([
         { loadId: 2, tokens: 8_300, fromContext: true },
@@ -2081,7 +2082,7 @@ describe("startup additions and the fixed load counted once", () => {
         { loadId: 1, tokens: 8_300, fromContext: true },
       ]);
       expect(skillsRow(atStep(storage, S, 2))).toEqual([
-        { loadId: 2, tokens: 8_570, fromContext: false },
+        { loadId: 2, tokens: 6_897, fromContext: false },
       ]);
     });
 
@@ -2098,7 +2099,7 @@ describe("startup additions and the fixed load counted once", () => {
       });
       recordReport(storage, S, 6_500);
       expect(skillsRow(atStep(storage, S, 2))).toEqual([
-        { loadId: 2, tokens: 8_570, fromContext: false },
+        { loadId: 2, tokens: 6_897, fromContext: false },
         { loadId: 3, tokens: 1_000, fromContext: false },
       ]);
     });
@@ -2136,7 +2137,7 @@ describe("a subagent's start in its Snapshot", () => {
       kind: "instructions",
       filePath: "/home/example/.claude/CLAUDE.md",
       occurredAt: 500,
-      sizeBytes: 6_474,
+      sizeBytes: 6_000,
     });
     seedLoad(db, {
       id: 11,
@@ -2144,8 +2145,8 @@ describe("a subagent's start in its Snapshot", () => {
       kind: "skill-listing",
       occurredAt: 600,
       source: "transcript",
-      sizeBytes: 24_851,
-      itemCount: 49,
+      sizeBytes: 20_000,
+      itemCount: 40,
     });
     return { storage, db, S };
   }
@@ -2171,7 +2172,7 @@ describe("a subagent's start in its Snapshot", () => {
       {
         kind: "instructions",
         filePath: "/home/example/garden/beds/CLAUDE.md",
-        sizeBytes: 6_474,
+        sizeBytes: 6_000,
       },
       { kind: "skill-listing", sizeBytes: 5_000, itemCount: 8 },
     ];
@@ -2194,7 +2195,7 @@ describe("a subagent's start in its Snapshot", () => {
     expect(split).toEqual({
       kind: "split",
       requestId: 102,
-      total: 13_684,
+      total: 13_520,
       system: { chars: 12_000, tokens: 4_138, fromContext: false },
       tools: [{ name: "Read", chars: 2_000, tokens: 690 }],
       toolsReported: null,
@@ -2209,8 +2210,8 @@ describe("a subagent's start in its Snapshot", () => {
         {
           loadId: 24,
           name: "/home/example/garden/beds/CLAUDE.md",
-          bytes: 6_474,
-          tokens: 2_233,
+          bytes: 6_000,
+          tokens: 2_069,
         },
       ],
       startup: [
@@ -2259,10 +2260,10 @@ describe("a subagent's start in its Snapshot", () => {
     const before = atStep(storage, S, 101).totals;
     seedSubagentStart(db, S, SUBAGENT, 20, 100);
     const after = atStep(storage, S, 101).totals;
-    // 414 + 2,233 + 2,759 + 1,035 + 1,725 + 690.
-    expect(after.named - before.named).toBe(8_856);
+    // 414 + 2,069 + 2,759 + 1,035 + 1,725 + 690.
+    expect(after.named - before.named).toBe(8_692);
     expect(after.measured).toBe(before.measured);
-    expect(after.other).toBe((before.other ?? 0) - 8_856);
+    expect(after.other).toBe((before.other ?? 0) - 8_692);
   });
 
   it("leaves the main conversation's Snapshot, split and items, as it was", () => {
@@ -2678,7 +2679,9 @@ describe("a saved tool output", () => {
 
   it("reads as the output of the step that printed it, and links to that step", () => {
     const detail = stepDetail(seedSavedOutput(true), 2);
-    expect(detail?.sentence).toBe("Read the saved output of Ran `npm test`");
+    expect(detail?.sentence).toBe(
+      'Read the saved output of the step "Ran `npm test`"',
+    );
     expect(detail?.savedOutputStepId).toBe(1);
   });
 

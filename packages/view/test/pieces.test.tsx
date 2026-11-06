@@ -468,7 +468,7 @@ describe("the detail panel", () => {
               sessionId: "s1",
               toolName: "Read",
               outcome: "succeeded",
-              sentence: "Read the saved output of Ran `npm test`",
+              sentence: 'Read the saved output of the step "Ran `npm test`"',
               savedOutputStepId,
               facts: [],
               requests: [],

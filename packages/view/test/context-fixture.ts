@@ -7,8 +7,10 @@ import type { ContextAtStep } from "@flightpath/flightpath/api/payloads";
 // with step 8 seeded the way the API's own tests seed the
 // first step after a compaction) — not written by hand, so
 // the component test checks the lens against the server's
-// own answer. Regenerate by seeding the planted fixture and
-// printing contextAtStep for steps 4, 6 and 8.
+// own answer, and the daemon's context-at-step test compares
+// all three payloads with what it reads. Regenerate by
+// seeding the planted fixture and printing contextAtStep for
+// steps 4, 6 and 8.
 
 export const CONTEXT_AT_STEP_4: ContextAtStep = {
   stepId: 4,

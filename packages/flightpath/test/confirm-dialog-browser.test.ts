@@ -165,8 +165,8 @@ describe("the confirmation dialog", () => {
     await openTurnOnDialog(page);
     const start = Date.now();
     await page.mouse.click(8, 8);
-    // The criterion's own measure: still open one second
-    // after the click, so nothing closed it on a timer.
+    // Still open one second after the click, so nothing
+    // closed it on a timer.
     await page.waitForFunction((t) => Date.now() - t >= 1_000, start);
     expect(await page.locator("dialog[open]").count()).toBe(1);
     expect(posts()).toBe(0);

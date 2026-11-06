@@ -143,7 +143,7 @@ describe("the daemon", DAEMON_SUITE, () => {
     expect(tries).toBe(5);
   });
 
-  it("sends the old settings address to the view and serves its API with no-store", async () => {
+  it("redirects /settings to the view's settings screen and serves its API with no-store", async () => {
     const { child, port, token } = await startTestDaemon(
       makeRoot("flightpath-daemon-test-").root,
     );

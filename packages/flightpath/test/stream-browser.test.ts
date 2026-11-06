@@ -32,8 +32,7 @@ import { writeSettings } from "./support/settings.js";
 // The page side is read through the app bar's connection
 // status and the banner under it — they are what the page
 // promises. What the model holds is covered at the client
-// seam and against the hub; the appearance and place cases
-// return with the session screen that renders the model.
+// seam and against the hub.
 const SESSION = "browser-stream-session";
 
 interface World {

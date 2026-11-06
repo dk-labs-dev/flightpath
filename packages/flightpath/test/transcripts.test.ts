@@ -50,10 +50,10 @@ import { parseTranscriptLine } from "../src/transcripts/parse.js";
 // The transcript reader (ADR-0019): requests and context samples
 // from hand-written synthetic transcripts, live follow from the
 // last offset, and the import of sessions hooks never captured.
-// No fixture here is a real transcript, bar the /context report
-// in its describe below, cut from a real 30 Oct transcript with
-// its MCP server names replaced; every other line is written
-// for this test.
+// No fixture here is a real transcript. The /context report in
+// its describe below is laid out as Claude Code writes it, under
+// an example server name; every other line is written for this
+// test.
 
 const T0 = Date.parse("2026-10-24T10:00:00.000Z");
 
@@ -237,10 +237,9 @@ describe("parseTranscriptLine", () => {
 
 // A /context report as it lands in the transcript: a user
 // entry with isMeta set whose text is the report. These are
-// its first 25 lines, cut from a real 30 Oct transcript; the
-// MCP rows' server is "example", as there. The two trailing
-// spaces after the model id are a Markdown line break, as
-// captured.
+// its first 25 lines, laid out as Claude Code writes them;
+// the MCP rows' server is "example". The two trailing spaces
+// after the model id are a Markdown line break, as captured.
 const CONTEXT_REPORT = [
   "## Context Usage",
   "",
@@ -1517,7 +1516,7 @@ describe("typed prompts", () => {
 
   it("opens no turn for a local command's entries", async () => {
     const world = await importTyped([
-      // The entries as the 30 Oct transcript holds them: a
+      // The entries as a transcript holds them: a
       // command's invocation, its caveat and its output, none
       // carrying an origin.
       typedLine(T0 + 1000, {

@@ -46,7 +46,7 @@ export function formatTokens(
 }
 
 // Characters per token, from Claude Code's /context against the
-// characters of four items (30 Oct 2026): 2.81 to 2.99.
+// characters of four items: 2.81 to 2.99.
 export const CHARS_PER_TOKEN = 2.9;
 
 /** What the "est." tag says when hovered: the view's note beside it, word for word. */

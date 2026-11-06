@@ -103,10 +103,8 @@ describe("the connection status in a browser", () => {
       };
     });
     expect(pill.height).toBe(30);
-    // The design's first chip, white at 0.14, failed axe's
-    // contrast floor for the pill's white text; the shipped
-    // chip is white at 0.08 (4.81:1), and the design uses it
-    // too now.
+    // White at 0.08 clears axe's contrast floor for the
+    // pill's white text (4.81:1).
     expect(pill.background).toBe("rgba(255, 255, 255, 0.08)");
     expect(pill.dot).toBe("rgb(163, 230, 53)");
     await expectAxeCleanOnPage(page);
