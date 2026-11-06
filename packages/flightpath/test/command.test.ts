@@ -667,7 +667,10 @@ describe("the hooks.json matchers", () => {
   const hooksConfig = JSON.parse(
     readFileSync(new URL("../hooks/hooks.json", import.meta.url), "utf8"),
   ) as {
-    hooks: Record<string, { matcher: string; hooks: { args: string[] }[] }[]>;
+    hooks: Record<
+      string,
+      { matcher: string; hooks: { command: string; args: string[] }[] }[]
+    >;
   };
 
   function matcherFires(matcher: string, name: string): boolean {
@@ -718,6 +721,21 @@ describe("the hooks.json matchers", () => {
     }
     for (const source of ["resume", "compact", "startupx"]) {
       expect(matcherFires(matcher, source), source).toBe(false);
+    }
+  });
+
+  // Windows runs a hook's command through a Unix-style shell, where a
+  // backslash is an escape: `node C:\dir\file.js` fails there. In
+  // exec form the script paths live in `args`.
+  it("writes every hook command with forward slashes", () => {
+    const parts = Object.values(hooksConfig.hooks).flatMap((entries) =>
+      entries.flatMap((entry) =>
+        entry.hooks.flatMap((hook) => [hook.command, ...hook.args]),
+      ),
+    );
+    expect(parts.length).toBeGreaterThan(0);
+    for (const part of parts) {
+      expect(part).not.toContain("\\");
     }
   });
 

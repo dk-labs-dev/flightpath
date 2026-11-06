@@ -37,6 +37,13 @@ export const SETTING_SPECS: SettingSpec[] = [
     description: "Print a one-line notice when a session starts recording.",
   },
   {
+    name: "terminalLine",
+    type: "boolean",
+    default: true,
+    description:
+      "Print a one-line note after Claude's reply when a turn has a suggestion worth a look.",
+  },
+  {
     name: "telemetry",
     type: "boolean",
     default: false,

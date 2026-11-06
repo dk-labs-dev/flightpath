@@ -8,6 +8,7 @@ export interface Settings {
   port: number;
   autostart: boolean;
   startupNotice: boolean;
+  terminalLine: boolean;
   telemetry: boolean;
   excludedFolders: string[];
   storePromptText: boolean;

@@ -29,6 +29,7 @@ import {
   SESSION_SHAPES_SQL,
   STEP_BY_ID_SQL,
   STEP_ROWS_SQL,
+  TURN_FOR_PROMPT_SQL,
   TURN_ROWS_SQL,
   openStorage,
   type Storage,
@@ -1166,6 +1167,9 @@ describe("read api query plans", () => {
         expect(plan).not.toContain("SCAN");
       }
       expect(planFor(STEP_BY_ID_SQL, 103)).toContain("SEARCH");
+      expect(planFor(TURN_FOR_PROMPT_SQL, "sess-main")).toContain(
+        "turns_prompt",
+      );
       // The two session statements read the sessions table
       // itself; every per-session lookup inside them must
       // still be a search, never a scan of a child table.

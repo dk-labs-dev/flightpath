@@ -372,6 +372,8 @@ export const DISMISSALS_SQL =
   "SELECT finding_id AS findingId FROM finding_dismissals WHERE session_id = ?";
 const DISMISS_FINDING_SQL =
   "INSERT INTO finding_dismissals (session_id, finding_id, dismissed_at) VALUES (?, ?, ?) ON CONFLICT (session_id, finding_id) DO NOTHING";
+export const TURN_FOR_PROMPT_SQL =
+  "SELECT id FROM turns WHERE session_id = ? AND prompt_id = ?";
 export const TURN_ROWS_SINCE_SQL =
   "SELECT id, sequence, started_at AS startedAt, ended_at AS endedAt, prompt_text AS promptText, flightpath_command AS flightpathCommand, prompt_chars AS promptChars, prompt_lines AS promptLines, image_count AS imageCount, image_bytes AS imageBytes FROM turns WHERE session_id = ? AND id > ? ORDER BY id ASC";
 export const STEP_ROWS_SINCE_SQL =
@@ -709,6 +711,19 @@ export function streamProbeMethod(db: DatabaseSync) {
         sessionId,
         sessionId,
       ) as StreamProbeRow,
+  };
+}
+
+// The turn a hook's prompt id names; the hooks and the telemetry
+// share that id, so it is how a hook event finds its turn.
+export function turnForPromptMethod(db: DatabaseSync) {
+  const turnForPromptQuery = db.prepare(TURN_FOR_PROMPT_SQL);
+  return {
+    turnIdForPrompt: (sessionId: string, promptId: string) =>
+      (
+        turnForPromptQuery.get(sessionId, promptId) as
+          { id: number } | undefined
+      )?.id,
   };
 }
 

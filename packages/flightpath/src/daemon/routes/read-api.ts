@@ -13,6 +13,7 @@ import {
   sessionContext,
   sessionFindings,
   sessionSnapshot,
+  sessionTerminalLine,
   sessionTokens,
   stepDetail,
   storageSummary,
@@ -71,7 +72,8 @@ export function getSessions(
 }
 
 /** One session's own routes: its snapshot, its token history,
- * its findings and the context at one step or one request. */
+ * its findings, the line its terminal prints when a turn ends
+ * and the context at one step or one request. */
 export function getSession(
   ctx: RouteContext,
   request: IncomingMessage,
@@ -89,7 +91,8 @@ export function getSession(
     (leaf !== "snapshot" &&
       leaf !== "tokens" &&
       leaf !== "context" &&
-      leaf !== "findings")
+      leaf !== "findings" &&
+      leaf !== "terminal-line")
   ) {
     sendNotFound(response);
     return;
@@ -98,9 +101,9 @@ export function getSession(
     sendFound(response, sessionSnapshot(ctx.storage, ctx.settings, sessionId));
     return;
   }
+  const { searchParams } = new URL(request.url ?? "", "http://127.0.0.1");
   if (leaf === "context") {
-    const url = new URL(request.url ?? "", "http://127.0.0.1");
-    const ask = contextAsk(url.searchParams);
+    const ask = contextAsk(searchParams);
     if (ask === null) {
       response.writeHead(400).end();
       return;
@@ -110,6 +113,11 @@ export function getSession(
   }
   if (leaf === "findings") {
     sendFound(response, sessionFindings(ctx.storage, sessionId));
+    return;
+  }
+  if (leaf === "terminal-line") {
+    const promptId = searchParams.get("prompt") ?? "";
+    sendFound(response, sessionTerminalLine(ctx.storage, sessionId, promptId));
     return;
   }
   const history = sessionTokens(ctx.storage, sessionId, {
