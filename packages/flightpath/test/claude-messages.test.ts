@@ -28,10 +28,10 @@ import { INSERT_CLAUDE_MESSAGE_SQL } from "../src/transcripts/ingest.js";
 // What Claude Code says in a session beside the person's own
 // prompts: a command's name, a subagent's hand-back, a notice.
 // Entries as Claude Code writes them, with every text body
-// replaced by filler of the same length, so sizes stay true.
+// replaced by filler; the sizes, counts and times are made up.
 
 const SESSION = "sess-said";
-const T0 = Date.parse("2026-10-30T15:00:00.000Z");
+const T0 = Date.parse("2026-10-27T09:00:00.000Z");
 
 afterEach(async () => {
   await runCleanups();
