@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  contextAtStep,
   loadSessionData,
   rebuildCauseText,
   sessionSnapshot,
@@ -96,6 +97,26 @@ function seedMeasuredRequest(
     requestId: fields.id,
     sampledAt: fields.startedAt,
     contextTokens: fields.tokens,
+  });
+}
+
+/** Two main requests, the first on Sonnet 5.5 and the second on another model. */
+function seedSwitchFromSonnet(
+  db: DatabaseSync,
+  sessionId: string,
+  model: string,
+): void {
+  seedMeasuredRequest(db, sessionId, {
+    id: 1,
+    model: "claude-sonnet-5-5",
+    startedAt: 1_000,
+    tokens: 10_000,
+  });
+  seedMeasuredRequest(db, sessionId, {
+    id: 2,
+    model,
+    startedAt: 2_000,
+    tokens: 20_000,
   });
 }
 
@@ -355,6 +376,7 @@ describe("the token history of the planted session", () => {
     // model default sets the compact point. Two ended turns
     // grew, so no turns-left estimate yet.
     expect(result.room).toEqual({
+      model: "claude-sonnet-5-5",
       window: { tokens: 1_000_000, source: "model-list", reportedAt: null },
       autoCompact: { tokens: 967_000, source: "model-default" },
       toLimit: 973_000,
@@ -568,6 +590,7 @@ describe("the token history", () => {
 
     const result = history(storage, S);
     expect(result.room).toEqual({
+      model: "claude-sonnet-4-6",
       window: { tokens: 200_000, source: "model-list", reportedAt: null },
       autoCompact: null,
       toLimit: 150_000,
@@ -654,6 +677,61 @@ describe("the token history", () => {
       source: "model-list",
       reportedAt: null,
     });
+  });
+
+  it("gives the same 1M window in the summary, the room and each step after a switch to Haiku 5.5", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-room-switch-haiku-5-5";
+    seedOneTurn(db, S, "claude-sonnet-5-5");
+    seedSwitchFromSonnet(db, S, "claude-haiku-5-5");
+    for (const id of [1, 2]) {
+      seedStep(db, {
+        id,
+        sessionId: S,
+        turnId: 1,
+        toolName: "Bash",
+        startedAt: id * 1_000,
+        endedAt: id * 1_000 + 500,
+        resultRequestId: id,
+      });
+    }
+
+    const window = {
+      tokens: 1_000_000,
+      source: "model-list",
+      reportedAt: null,
+    };
+    expect(history(storage, S).room.window).toEqual(window);
+    expect(
+      sessionSnapshot(storage, defaultSettings(), S)?.summary.window,
+    ).toEqual(window);
+    const data = loadSessionData(storage, S);
+    if (data === undefined) throw new Error("session did not seed");
+    expect(contextAtStep(data, 1)?.measured?.window).toEqual(window);
+    expect(contextAtStep(data, 2)?.measured?.window).toEqual(window);
+  });
+
+  it("shows the latest main model in the summary, and the session's own with no request", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-summary-model";
+    seedOneTurn(db, S, "claude-sonnet-5-5");
+    const summaryModel = () =>
+      sessionSnapshot(storage, defaultSettings(), S)?.summary.model;
+    expect(summaryModel()).toBe("claude-sonnet-5-5");
+
+    seedSwitchFromSonnet(db, S, "claude-haiku-5-5");
+    expect(summaryModel()).toBe("claude-haiku-5-5");
+  });
+
+  it("names the latest model in the room when its window is not known", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-room-switch-unlisted";
+    seedOneTurn(db, S, "claude-sonnet-5-5");
+    seedSwitchFromSonnet(db, S, "claude-example-1");
+
+    const { room } = history(storage, S);
+    expect(room.model).toBe("claude-example-1");
+    expect(room.window.source).toBe("unknown");
   });
 
   it("takes the compact point from a report's buffer", () => {

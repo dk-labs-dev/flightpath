@@ -295,6 +295,7 @@ export interface ContextWindow {
 }
 
 export interface Room {
+  model: string | null;
   window: ContextWindow;
   autoCompact: {
     tokens: number;

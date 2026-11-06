@@ -44,6 +44,7 @@ export function history(overrides: Partial<TokenHistory> = {}): TokenHistory {
     background: [],
     turns: [],
     room: {
+      model: "claude-sonnet-4-6",
       window: { tokens: 200_000, source: "model-list", reportedAt: null },
       autoCompact: { tokens: 193_000, source: "model-default" },
       toLimit: 160_000,

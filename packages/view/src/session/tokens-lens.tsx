@@ -156,7 +156,6 @@ function AutoCompactRoom({ history }: { history: TokenHistory }) {
  * at the recent pace. */
 function RoomPanel({ history }: { history: TokenHistory }) {
   const room = history.room;
-  const model = useSessionStore((s) => s.sessionSummary?.model ?? null);
   return (
     <section className="tokens-card" aria-labelledby="tokens-room-h">
       <div className="tokens-card-head">
@@ -188,7 +187,7 @@ function RoomPanel({ history }: { history: TokenHistory }) {
             </div>
           </div>
         )}
-        <WindowSourceLine window={room.window} model={model} />
+        <WindowSourceLine window={room.window} model={room.model} />
       </div>
     </section>
   );

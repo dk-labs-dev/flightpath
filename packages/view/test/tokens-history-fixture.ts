@@ -191,6 +191,7 @@ export const plantedTokenHistory: TokenHistory = {
     },
   ],
   room: {
+    model: "claude-sonnet-5-5",
     window: {
       tokens: 1000000,
       source: "model-list",

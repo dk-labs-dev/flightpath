@@ -96,6 +96,7 @@ describe("the curve", () => {
       tokenPoint(2, T0 + 60_000, 150_000),
     ];
     const room = {
+      model: "claude-sonnet-4-6",
       window: {
         tokens: 200_000,
         source: "model-list" as const,
@@ -142,6 +143,7 @@ describe("the curve", () => {
       tokenPoint(2, T0 + 60_000, 202_000),
     ];
     const room = {
+      model: "claude-sonnet-5-5",
       window: {
         tokens: 1_000_000,
         source: "model-list" as const,

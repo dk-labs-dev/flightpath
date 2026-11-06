@@ -44,8 +44,31 @@ describe("contextWindowFor", () => {
     });
   });
 
+  it("reads the current models' 1M windows from the list, a dated id included", () => {
+    for (const model of [
+      "claude-haiku-5-5",
+      "claude-haiku-5-5-20261007",
+      "claude-fable-5-1",
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-opus-4-7",
+    ]) {
+      expect(contextWindowFor(model, [], null)).toEqual({
+        tokens: 1_000_000,
+        source: "model-list",
+        reportedAt: null,
+      });
+    }
+  });
+
   it("reads the 200K windows from the list, the dated Haiku id included", () => {
     expect(contextWindowFor("claude-sonnet-4-6", [], null)).toEqual({
+      tokens: 200_000,
+      source: "model-list",
+      reportedAt: null,
+    });
+    expect(contextWindowFor("claude-opus-4-6", [], null)).toEqual({
       tokens: 200_000,
       source: "model-list",
       reportedAt: null,

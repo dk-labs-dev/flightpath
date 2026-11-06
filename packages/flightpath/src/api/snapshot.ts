@@ -401,7 +401,7 @@ export function snapshotSummary(
     startedAt: data.session.firstSeenAt,
     endedAt: data.session.status === "ended" ? data.session.lastSeenAt : null,
     lastActivityAt: data.session.lastSeenAt,
-    model: data.session.model,
+    model,
     permissionModes: data.session.permissionModes,
     sources: data.session.sources,
     endSeen: data.session.endSeen,

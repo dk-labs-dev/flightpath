@@ -26,12 +26,12 @@ import {
 const UNCACHED_BREAK = 100_000;
 
 // Claude Code's prompt-caching page says changing effort keeps
-// the cache on the 5.5 models. The list names the models where
-// it does not; a model that is not listed gets no effort finding.
-// Claude Code may report a name with a date suffix, such as
-// claude-haiku-4-5-20251001.
+// the cache on the 5.5 models and Fable 5.1. The list names the
+// models where it does not; a model that is not listed gets no
+// effort finding. Claude Code may report a name with a date
+// suffix, such as claude-haiku-4-5-20251001.
 const EFFORT_SENSITIVE_MODEL =
-  /^(?:claude-opus-4-6|claude-sonnet-4-6|claude-haiku-4-5)(?:-\d{8})?$/;
+  /^(?:claude-opus-5|claude-sonnet-5|claude-opus-4-8|claude-opus-4-7|claude-opus-4-6|claude-sonnet-4-6|claude-haiku-4-5)(?:-\d{8})?$/;
 
 type NamedRebuild = Pick<
   Finding,
