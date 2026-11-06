@@ -20,6 +20,7 @@ import {
 } from "./support/cleanup.js";
 import { distDir, distPath } from "./support/daemon.js";
 import { runDist, runDistAsync, scratchHome } from "./support/process.js";
+import { packageVersion } from "./support/version.js";
 
 // Integration tests for the built hook script, run as a child
 // process the way Claude Code runs it: against a test server, a
@@ -211,7 +212,7 @@ describe("the hook script", () => {
     expect(envelope.id).toMatch(/^[0-9a-f]{32}$/);
     expect(typeof envelope.received_at).toBe("number");
     expect(envelope.redaction_version).toBe(1);
-    expect(envelope.plugin_version).toBe("0.0.0");
+    expect(envelope.plugin_version).toBe(packageVersion());
     expect(envelope.event.prompt).toBe(
       "deploy with [redacted:github-token] please",
     );

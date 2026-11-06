@@ -1,4 +1,5 @@
 {
+  "author": "Naga Golla",
   "description": "Flightpath: records every Claude Code session live, draws the journey as a map, and coaches the next session.",
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -15,9 +16,15 @@
     "./api/payloads": "./src/api/payloads.ts",
     "./api/rebuild-cause": "./src/api/rebuild-cause.ts"
   },
+  "homepage": "https://github.com/dk-labs-dev/flightpath",
   "license": "Apache-2.0",
   "name": "@flightpath/flightpath",
   "private": true,
+  "repository": {
+    "type": "git",
+    "directory": "packages/flightpath",
+    "url": "git+https://github.com/dk-labs-dev/flightpath.git"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node build.mjs && pnpm --filter @flightpath/view run build",
     "test": "tsc -p tsconfig.build.json && node build.mjs && pnpm --filter @flightpath/view run build && vitest run --project main && vitest run --project budgets",
@@ -26,5 +33,5 @@
     "regen-tokens-fixture": "node scripts/regenerate-tokens-fixture.mjs"
   },
   "type": "module",
-  "version": "0.0.0"
+  "version": "1.0.0"
 }
