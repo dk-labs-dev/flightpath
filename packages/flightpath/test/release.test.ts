@@ -1,0 +1,258 @@
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { describe, expect, it } from "vitest";
+
+// These tests cover the release tooling at the repository root: the
+// channel a tag builds, the notes a version gets, and the exact set
+// of files a release ships. The scripts are plain .mjs so the
+// release workflow can run them before anything is installed; they
+// are imported here by file URL, the way test/repo-path.test.ts
+// imports scripts/repo-path.mjs.
+
+const scriptsDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "..",
+  "scripts",
+);
+
+type ReleasePlan = {
+  tag: string;
+  version: string;
+  channel: string;
+  branch: string;
+  prerelease: boolean;
+  zipName: string;
+  marketplaceName: string;
+};
+
+type Marketplace = {
+  name: string;
+  plugins: { name: string; source: string }[];
+};
+
+const { planForTag }: { planForTag: (tag: string) => ReleasePlan } =
+  await import(pathToFileURL(join(scriptsDir, "release-plan.mjs")).href);
+
+const {
+  notesForVersion,
+}: {
+  notesForVersion: (changelog: string, version: string) => string;
+} = await import(pathToFileURL(join(scriptsDir, "release-notes.mjs")).href);
+
+const {
+  pluginFiles,
+  copyPlugin,
+  channelMarketplace,
+  packageRelease,
+}: {
+  pluginFiles: (pluginDir: string) => string[];
+  copyPlugin: (root: string, target: string) => string[];
+  channelMarketplace: (channel: string) => Marketplace;
+  packageRelease: (root: string, target: string, channel: string) => string[];
+} = await import(pathToFileURL(join(scriptsDir, "package-plugin.mjs")).href);
+
+describe("release plans", () => {
+  it("sends a plain tag to the stable channel", () => {
+    expect(planForTag("v1.0.0")).toEqual({
+      tag: "v1.0.0",
+      version: "1.0.0",
+      channel: "release",
+      branch: "release",
+      prerelease: false,
+      zipName: "flightpath-1.0.0.zip",
+      marketplaceName: "flightpath",
+    });
+  });
+
+  it("sends a pre-release tag to the next channel", () => {
+    const plan = planForTag("v1.0.0-rc.1");
+    expect(plan.channel).toBe("next");
+    expect(plan.branch).toBe("next");
+    expect(plan.prerelease).toBe(true);
+    expect(plan.zipName).toBe("flightpath-1.0.0-rc.1.zip");
+    expect(plan.marketplaceName).toBe("flightpath-next");
+  });
+
+  it("treats any pre-release suffix as the next channel", () => {
+    expect(planForTag("v0.9.9-beta.2").channel).toBe("next");
+    expect(planForTag("v2.3.4-rc.12").prerelease).toBe(true);
+  });
+
+  it("refuses tags that are not versions", () => {
+    for (const tag of ["1.0.0", "v1.0", "v1.0.0.1", "v1.0.0-", "release", ""]) {
+      expect(() => planForTag(tag)).toThrow(/not a release tag/);
+    }
+  });
+});
+
+const CHANGELOG = [
+  "# Changelog",
+  "",
+  "## 1.1.0-rc.1",
+  "",
+  "- A look at what is coming.",
+  "",
+  "## [1.0.0] - 2026-11-07",
+  "",
+  "- The first thing.",
+  "- The second thing.",
+  "",
+  "## 0.9.0",
+  "",
+  "- An older thing.",
+  "",
+].join("\n");
+
+describe("changelog notes", () => {
+  it("takes the version's own section", () => {
+    expect(notesForVersion(CHANGELOG, "1.0.0")).toBe(
+      "- The first thing.\n- The second thing.",
+    );
+  });
+
+  it("prefers an exact pre-release section over the base version's", () => {
+    expect(notesForVersion(CHANGELOG, "1.1.0-rc.1")).toBe(
+      "- A look at what is coming.",
+    );
+  });
+
+  it("falls back to the base version for a pre-release without a section", () => {
+    expect(notesForVersion(CHANGELOG, "1.0.0-rc.2")).toBe(
+      "- The first thing.\n- The second thing.",
+    );
+  });
+
+  it("refuses a version the changelog does not name", () => {
+    expect(() => notesForVersion(CHANGELOG, "2.0.0")).toThrow(
+      /no section for 2\.0\.0/,
+    );
+  });
+});
+
+function write(path: string, text: string) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
+}
+
+function fixtureRepo(withDist: boolean): string {
+  const root = mkdtempSync(join(tmpdir(), "flightpath-release-"));
+  const plugin = join(root, "packages", "flightpath");
+  write(join(plugin, ".claude-plugin", "plugin.json"), "{}");
+  write(join(plugin, "hooks", "hooks.json"), "{}");
+  write(join(plugin, "commands", "stop.md"), "");
+  write(join(plugin, "scripts", "tool.mjs"), "");
+  write(join(plugin, "src", "main.ts"), "");
+  write(join(plugin, "test", "own.test.ts"), "");
+  write(join(plugin, "package.json"), "{}");
+  write(join(plugin, "build.mjs"), "");
+  if (withDist) {
+    write(join(plugin, "dist", "hook.js"), "");
+  }
+  write(join(root, "LICENSE"), "");
+  write(join(root, "NOTICE"), "");
+  return root;
+}
+
+describe("the plugin package", () => {
+  it("ships the built plugin and the licence files, nothing else", () => {
+    const root = fixtureRepo(true);
+    const target = join(root, "out");
+    expect(copyPlugin(root, target)).toEqual([
+      ".claude-plugin/plugin.json",
+      "LICENSE",
+      "NOTICE",
+      "commands/stop.md",
+      "dist/hook.js",
+      "hooks/hooks.json",
+      "scripts/tool.mjs",
+    ]);
+    expect(existsSync(join(target, "dist", "hook.js"))).toBe(true);
+    expect(existsSync(join(target, "LICENSE"))).toBe(true);
+    expect(existsSync(join(target, "NOTICE"))).toBe(true);
+    expect(existsSync(join(target, "src"))).toBe(false);
+    expect(existsSync(join(target, "package.json"))).toBe(false);
+  });
+
+  it("refuses to package a tree that has not been built", () => {
+    const root = fixtureRepo(false);
+    expect(() => copyPlugin(root, join(root, "out"))).toThrow(/dist/);
+  });
+
+  it("matches the marketplace this repository ships", () => {
+    const pluginDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const files = pluginFiles(pluginDir);
+    for (const expected of [
+      ".claude-plugin/plugin.json",
+      "README.md",
+      "hooks/hooks.json",
+      "commands/stop.md",
+      "scripts/measure-ingest.mjs",
+    ]) {
+      expect(files).toContain(expected);
+    }
+    for (const file of files) {
+      expect(file.startsWith("src/")).toBe(false);
+      expect(file.startsWith("test/")).toBe(false);
+      expect(file.startsWith("node_modules/")).toBe(false);
+    }
+    for (const left of [
+      "package.json",
+      "build.mjs",
+      "tsconfig.json",
+      "tsconfig.build.json",
+      "vitest.config.ts",
+    ]) {
+      expect(files).not.toContain(left);
+    }
+  });
+});
+
+describe("channel marketplaces", () => {
+  it("names the stable channel's marketplace after the plugin", () => {
+    const marketplace = channelMarketplace("release");
+    expect(marketplace.name).toBe("flightpath");
+    expect(marketplace.plugins).toEqual([
+      expect.objectContaining({ name: "flightpath", source: "./flightpath" }),
+    ]);
+  });
+
+  it("gives the next channel its own marketplace name", () => {
+    expect(channelMarketplace("next").name).toBe("flightpath-next");
+  });
+
+  it("refuses a channel it does not know", () => {
+    expect(() => channelMarketplace("beta")).toThrow(/unknown channel/);
+  });
+});
+
+describe("the packaged release folder", () => {
+  it("holds the channel's marketplace file and the plugin under flightpath/", () => {
+    const root = fixtureRepo(true);
+    const target = join(root, "release-folder");
+    expect(packageRelease(root, target, "next")).toEqual([
+      ".claude-plugin/marketplace.json",
+      "flightpath/.claude-plugin/plugin.json",
+      "flightpath/LICENSE",
+      "flightpath/NOTICE",
+      "flightpath/commands/stop.md",
+      "flightpath/dist/hook.js",
+      "flightpath/hooks/hooks.json",
+      "flightpath/scripts/tool.mjs",
+    ]);
+    const written = JSON.parse(
+      readFileSync(join(target, ".claude-plugin", "marketplace.json"), "utf8"),
+    ) as Marketplace;
+    expect(written.name).toBe("flightpath-next");
+    expect(written.plugins[0]?.source).toBe("./flightpath");
+  });
+});
