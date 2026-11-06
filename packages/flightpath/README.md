@@ -146,7 +146,9 @@ is running. It holds:
   progress is never deleted. Lowering the period asks you to
   confirm first, since it deletes sessions.
 - **idleShutdownMinutes** — how long the daemon waits with no
-  events before it exits. The next event starts it again.
+  events before it exits. It also stays up until a live session's
+  cache has expired, at most about an hour. The next event starts
+  it again.
 
 ## Telemetry
 

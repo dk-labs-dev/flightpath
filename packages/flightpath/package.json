@@ -12,6 +12,7 @@
     "./daemon/stream-messages": "./src/daemon/stream-messages.ts",
     "./format": "./src/format.ts",
     "./settings/types": "./src/settings/types.ts",
+    "./api/cache-lifetime": "./src/api/cache-lifetime.ts",
     "./api/context-limit": "./src/api/context-limit.ts",
     "./api/payloads": "./src/api/payloads.ts",
     "./api/rebuild-cause": "./src/api/rebuild-cause.ts"

@@ -192,7 +192,9 @@ function IdleField(props: FieldProps) {
       options={options}
       trailing={
         <span className="field-help">
-          with no activity. The next session starts it again.
+          with no activity, or once a running session&apos;s cache has gone cold
+          if that&apos;s later (at most about an hour). The next session starts
+          it again.
         </span>
       }
     />

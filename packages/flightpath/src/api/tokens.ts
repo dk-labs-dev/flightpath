@@ -25,6 +25,7 @@ import type {
   StepRow,
   Storage,
 } from "../storage/index.js";
+import { CACHE_LIFETIME_MS } from "./cache-lifetime.js";
 import {
   contextReportFor,
   contextWindowFor,
@@ -1006,8 +1007,7 @@ function expiredCause(
   const lifetime = from.cacheLifetime;
   if (lifetime === null) return null;
   const gap = to.at - (from.at + (previous.durationMs ?? 0));
-  const limit = lifetime === "5m" ? 5 * 60_000 : 60 * 60_000;
-  if (gap <= limit) return null;
+  if (gap <= CACHE_LIFETIME_MS[lifetime]) return null;
   return {
     kind: "expired",
     expected: false,

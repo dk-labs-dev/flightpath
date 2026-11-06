@@ -3,6 +3,7 @@
 // The summary carries when the cache started, never how long is
 // left, so it does not change while a session idles.
 
+import { CACHE_LIFETIME_MS } from "@flightpath/flightpath/api/cache-lifetime";
 import { formatTokens } from "@flightpath/flightpath/format";
 import type { SummaryCache } from "@flightpath/flightpath/api/payloads";
 
@@ -13,10 +14,8 @@ export const CACHE_LIFETIME_DOCS =
 
 const MINUTE_MS = 60_000;
 
-// How long each lifetime lasts, and how much of its end the
-// clock speaks for: the last tenth of an hour, the last two of
-// five minutes.
-const LIFETIME_MS = { "1h": 60 * MINUTE_MS, "5m": 5 * MINUTE_MS };
+// How much of a lifetime's end the clock speaks for: the last
+// tenth of an hour, the last two of five minutes.
 const SPEAKS_WITHIN_MS = { "1h": 10 * MINUTE_MS, "5m": 2 * MINUTE_MS };
 
 export interface CacheClock {
@@ -39,7 +38,7 @@ export function cacheClock(
   session: CacheClockSession,
 ): CacheClock | null {
   if (cache === null || !session.live || session.stepRunning) return null;
-  const left = cache.endedAt + LIFETIME_MS[cache.lifetime] - nowMs;
+  const left = cache.endedAt + CACHE_LIFETIME_MS[cache.lifetime] - nowMs;
   if (left <= 0) {
     return { phase: "expired", minutes: 0, tokens: cache.contextTokens };
   }
