@@ -357,7 +357,7 @@ describe("a burst of live steps", () => {
 });
 
 describe("the rows' clickable cues", () => {
-  it("gives steps an open chevron and parents a toggle, and neither to the rest", () => {
+  it("gives steps and the compaction an open chevron and parents a toggle, and neither to the rest", () => {
     renderRows();
     const step = container.querySelector('[data-row-key="step-101"]');
     expect(step?.classList.contains("trow-openable")).toBe(true);
@@ -372,8 +372,9 @@ describe("the rows' clickable cues", () => {
     expect(human?.querySelector(".trow-open svg")).toBeNull();
     expect(human?.querySelector(".trow-toggle svg")).toBeNull();
     const event = container.querySelector('[data-row-key="event-segment:41"]');
-    expect(event?.classList.contains("trow-static")).toBe(true);
-    expect(event?.querySelector(".trow-open svg")).toBeNull();
+    expect(event?.classList.contains("trow-openable")).toBe(true);
+    expect(event?.querySelector(".trow-open svg")).not.toBeNull();
+    expect(event?.querySelector(".trow-toggle svg")).toBeNull();
   });
 });
 

@@ -117,8 +117,8 @@ function seedLensSession(db: DatabaseSync): void {
     toolName: "Edit",
     input: {
       file_path: "/home/user/tip-calc/src/app.ts",
-      old_string: "a",
-      new_string: "b",
+      old_string: { chars: 1 },
+      new_string: { chars: 1 },
     },
     outcome: "failed",
     startedAt: T0 + 60_000,
@@ -128,7 +128,10 @@ function seedLensSession(db: DatabaseSync): void {
     sessionId: SESSION,
     turnId: turn1,
     toolName: "Write",
-    input: { file_path: "/home/user/tip-calc/src/tip.ts", content: "tip" },
+    input: {
+      file_path: "/home/user/tip-calc/src/tip.ts",
+      content: { chars: 3 },
+    },
     outcome: "succeeded",
     startedAt: T0 + 80_000,
     durationMs: 100,
@@ -139,7 +142,7 @@ function seedLensSession(db: DatabaseSync): void {
     stepId: write,
     kind: "permission_decision",
     occurredAt: T0 + 79_000,
-    decision: "allow",
+    decision: "accept",
   });
   seedStep(db, {
     sessionId: SESSION,
@@ -358,7 +361,7 @@ function seedTicksSession(db: DatabaseSync): void {
     turnId: turn,
     kind: "permission_decision",
     occurredAt: T0 + 250_000,
-    decision: "allow",
+    decision: "accept",
   });
   // A compaction whose nearest step started just before the
   // drop and whose next step started further past it: same
@@ -1319,7 +1322,7 @@ async function dragResizerTo(page: Page, toX: number): Promise<void> {
   await page.mouse.up();
 }
 
-describe("the steps lens clarity fixes", () => {
+describe("the steps lens, pointer and keyboard details", () => {
   it("selects the tick's step from clicks near a tick, not only on it", async () => {
     const page = await openLensPage(TICKS);
     const box = await page.locator(".curve-svg").boundingBox();

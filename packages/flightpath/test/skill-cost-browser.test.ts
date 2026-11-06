@@ -163,7 +163,7 @@ describe("a saved tool output read back", () => {
     await page.locator('[data-row-key="step-2"]').click();
     await expect
       .poll(() => page.locator(".detail-title").textContent())
-      .toBe("Read the saved output of Ran `npm test`");
+      .toBe('Read the saved output of the step "Ran `npm test`"');
     await page.locator(".detail-link").click();
     await expect
       .poll(() => page.locator(".detail-title").textContent())

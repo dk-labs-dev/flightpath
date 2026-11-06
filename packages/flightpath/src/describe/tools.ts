@@ -183,7 +183,7 @@ function describeRead(
   const source =
     ctx.savedOutputOf === undefined
       ? "a saved tool output"
-      : `the saved output of ${ctx.savedOutputOf}`;
+      : `the saved output of the step "${ctx.savedOutputOf}"`;
   return { sentence: `${verb} ${source}`, facts };
 }
 
@@ -429,7 +429,7 @@ function describeOtherTool(
   running: boolean,
 ): Described {
   // MCP tools are named mcp__<server>__<tool>; anything else
-  // is a tool the brief has no row for, named plainly.
+  // is a tool with no row of its own, named plainly.
   const mcp = /^mcp__(.+?)__(.+)$/.exec(step.toolName);
   if (!mcp) {
     return {

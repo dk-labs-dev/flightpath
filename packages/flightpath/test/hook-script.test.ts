@@ -349,7 +349,7 @@ describe("the hook script", () => {
     const server = await startServer();
     const { env } = hookHomeFor(server);
 
-    // The criterion is overhead, not absolute time: what the hook
+    // The measure is overhead, not absolute time: what the hook
     // adds over a bare Node start. Each round measures both back
     // to back, so a slow patch on a loaded machine lands on the
     // pair, not on the hook alone. Absolute times mostly measure

@@ -360,7 +360,7 @@ describe("downsamplePoints", () => {
     // a high point, and below it a rise the payload never
     // names — its two points are neither the bucket's low
     // nor its high, so only a re-derived rise could keep
-    // them, and the drawn set no longer re-derives.
+    // them, and the drawn set does not re-derive.
     const shape: [number, number][] = [
       [100, 90_000],
       [101, 70_000],

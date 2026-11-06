@@ -121,13 +121,13 @@ describe("describeStep", () => {
           ...inSession,
           savedOutputOf: "Ran `npm test`",
         }).sentence,
-      ).toBe("Read the saved output of Ran `npm test`");
+      ).toBe('Read the saved output of the step "Ran `npm test`"');
       expect(
         describeStep(readOf(saved, "open"), {
           ...inSession,
           savedOutputOf: "Ran `npm test`",
         }).sentence,
-      ).toBe("Reading the saved output of Ran `npm test`");
+      ).toBe('Reading the saved output of the step "Ran `npm test`"');
     });
 
     it("says a saved tool output when the step that printed it is not recorded", () => {

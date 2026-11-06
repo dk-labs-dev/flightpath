@@ -1,7 +1,6 @@
-// Replaying recorded hook events: two sessions cut into the
-// fixture beside this file, with every piece of private text
-// — typed prompts, report bodies, tool inputs and results,
-// the home path — replaced by filler.
+// Replaying recorded hook events: two sessions in the
+// fixture beside this file, whose prompts, report bodies,
+// tool inputs and results and home path are all made up.
 // What the replay must reproduce is what the person did:
 // the prompts they typed, and nothing else, as turns.
 

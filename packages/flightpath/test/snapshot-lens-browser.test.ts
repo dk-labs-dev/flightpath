@@ -26,12 +26,11 @@ import {
 
 // The snapshot lens in a real browser: a step chosen in the
 // steps lens is the step the snapshot lens shows; the lens
-// is axe-clean at desktop and phone widths, and captures of
-// the lens panel itself — a normal step and a step after a
-// compaction, at desktop and phone widths — are written
-// under the suite's own temporary folder for the hand-back.
-// The lens scrolls inside its own panel, so the captures
-// take the panel, never the window. Times
+// is axe-clean at desktop and phone widths, and screenshots
+// of the lens panel itself — a normal step and a step after
+// a compaction, at desktop and phone widths — are taken to
+// a temporary folder. The lens scrolls inside its own panel,
+// so the screenshots take the panel, never the window. Times
 // sit just behind the clock, as in the other lens suites:
 // the daemon's retention pass would delete a session whose
 // last activity is older than the kept-days setting.
@@ -249,8 +248,8 @@ function seedCompactedSession(db: DatabaseSync): void {
     kind: "skill-listing",
     occurredAt: T0 + 50_200,
     source: "transcript",
-    sizeBytes: 24_851,
-    itemCount: 49,
+    sizeBytes: 20_000,
+    itemCount: 40,
   });
   seedLoad(db, {
     id: 14,
@@ -258,7 +257,7 @@ function seedCompactedSession(db: DatabaseSync): void {
     kind: "agent-listing",
     occurredAt: T0 + 50_300,
     source: "transcript",
-    sizeBytes: 2_527,
+    sizeBytes: 2_500,
   });
   db.prepare(
     "INSERT INTO context_reports (session_id, model, window, system_prompt, skills, reported_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -668,7 +667,7 @@ describe("the snapshot lens", () => {
       rows.find((row) => row.includes(name));
     expect(sizeOf("System prompt")).toContain("2.8K tokensfrom /context");
     expect(sizeOf("Skills listing")).toContain("8.3K tokensfrom /context");
-    expect(sizeOf("Subagent types")).toContain("about 872 tokensest.");
+    expect(sizeOf("Subagent types")).toContain("about 863 tokensest.");
     // Before the compaction: folded, with its count. The
     // read file and the skill stand restored, with the note.
     expect(panel).toContain("Before the compaction");

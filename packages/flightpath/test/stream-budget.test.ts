@@ -58,7 +58,7 @@ describe("the stream's timed bounds", () => {
     const openP90 = await measure(40);
     for (const client of clients) client.close();
     // The bound the retention and long-session suites hold
-    // the acknowledgment to; both numbers go in the report.
+    // the acknowledgment to; both numbers are printed.
     console.info(
       `stream ack timing: p90 ${baselineP90.toFixed(1)} ms with no pages open, ${openP90.toFixed(1)} ms with 10 pages open (bound 250 ms)`,
     );
@@ -75,13 +75,13 @@ describe("the stream's timed bounds", () => {
   });
 });
 
-// The acceptance measurement for incremental capture, opt-in
+// The timing measurement for incremental capture, opt-in
 // like the read API's timing test: a 5,000-step session, ten
-// pages open on it, a live hook every 100 ms. The report is
-// the hook acknowledgment's p90 and the capture pass's cost
+// pages open on it, a live hook every 100 ms. It prints the
+// hook acknowledgment's p90 and the capture pass's cost
 // per pass — the event-loop lag the pass leaves on the
 // daemon's only thread (the daemon runs in this process).
-// Run it on a quiet machine; the numbers are the finding.
+// Run it on a quiet machine.
 describe("the stream's capture measurement", () => {
   it.skipIf(process.env.FLIGHTPATH_LONG_TESTS !== "1")(
     "keeps a live hook's acknowledgment under 250 ms at p90 on a 5,000-step session with ten pages open",

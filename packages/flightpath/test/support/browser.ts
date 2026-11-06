@@ -82,7 +82,7 @@ export async function bootBrowser(prefix: string): Promise<SeededBrowser> {
   );
 }
 
-/** The tail both starts share: launch Chromium and assemble
+/** The tail the three starts share: launch Chromium and assemble
  *  the SeededBrowser from the daemon's data folder, port and
  *  token. */
 async function launchSeededBrowser(

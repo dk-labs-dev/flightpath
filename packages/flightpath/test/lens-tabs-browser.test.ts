@@ -369,7 +369,7 @@ describe("the lens tabs in a browser", () => {
     }, place + furtherScroll);
     // Every write since the return is the place, or the place
     // plus the further scroll — none is the remount's top, which
-    // a save in that window used to overwrite the place with.
+    // would overwrite the place.
     const writes = await page.evaluate(() => window.placeWrites);
     for (const write of writes) {
       const atPlace = Math.abs(write - place) <= 56;

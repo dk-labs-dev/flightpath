@@ -319,7 +319,7 @@ describe("recorder health", () => {
     }
   }, 60_000);
 
-  it("keeps the notice fast with 20,000 files in the buffer", () => {
+  it("warns with 20,000 files in the buffer, and scans them within 150 ms at p90", () => {
     const { root, dataDir } = makeRoot("flightpath-health-");
     const env = envForDataRoot(root);
     fillBuffer(dataDir, 20_000, Date.now() - 10 * 60_000);
@@ -343,7 +343,7 @@ describe("recorder health", () => {
       `notice timing with 20,000 buffered files: p90 ${p90.toFixed(1)} ms, overhead p90 ${overheadP90.toFixed(1)} ms over ${durations.length} runs`,
     );
     // The bound sits on the scan, which grows with the buffer; the spawn
-    // difference is reported, not bounded, because it measures the scheduler.
+    // difference is printed, not bounded, because it measures the scheduler.
     const scans: number[] = [];
     for (let i = 0; i < 25; i++) {
       const started = performance.now();
@@ -355,8 +355,8 @@ describe("recorder health", () => {
       `buffer scan with 20,000 buffered files: p90 ${scanP90.toFixed(1)} ms over ${scans.length} runs`,
     );
     expect(scanP90).toBeLessThan(150);
-    // The recording hook's drop path, at a full buffer, stays in
-    // the same order as its live path.
+    // The recording hook's drop path at a full buffer is timed
+    // and printed, not bounded.
     const hookDurations: number[] = [];
     for (let i = 0; i < 10; i++) {
       const started = performance.now();

@@ -1109,11 +1109,11 @@ describe("the snapshot lens in a session that ran no step", () => {
 /** A recorded shape's split, in the API's own terms: seven
  * tools, two MCP servers, an instruction file whose size
  * wasn't recorded, and the five things added at session
- * start at the sizes a real session recorded. */
+ * start at example sizes. */
 const SPLIT_LOAD: FixedLoad = {
   kind: "split",
   requestId: 5,
-  total: 30_641,
+  total: 29_200,
   system: { chars: 34_000, tokens: 8_500, fromContext: false },
   tools: [
     { name: "Task", chars: 36_700, tokens: 9_175 },
@@ -1138,9 +1138,9 @@ const SPLIT_LOAD: FixedLoad = {
       loadId: 3,
       kind: "skill-listing",
       name: null,
-      count: 49,
-      chars: 24_851,
-      tokens: 6_213,
+      count: 40,
+      chars: 20_000,
+      tokens: 5_000,
       fromContext: false,
     },
     {
@@ -1148,8 +1148,8 @@ const SPLIT_LOAD: FixedLoad = {
       kind: "mcp-instructions",
       name: null,
       count: 2,
-      chars: 3_715,
-      tokens: 929,
+      chars: 3_000,
+      tokens: 750,
       fromContext: false,
     },
     {
@@ -1157,17 +1157,17 @@ const SPLIT_LOAD: FixedLoad = {
       kind: "agent-listing",
       name: null,
       count: null,
-      chars: 2_527,
-      tokens: 632,
+      chars: 2_500,
+      tokens: 625,
       fromContext: false,
     },
     {
       loadId: 6,
       kind: "deferred-tool-names",
       name: null,
-      count: 132,
-      chars: 4_160,
-      tokens: 1_040,
+      count: 100,
+      chars: 4_000,
+      tokens: 1_000,
       fromContext: false,
     },
     {
@@ -1175,8 +1175,8 @@ const SPLIT_LOAD: FixedLoad = {
       kind: "hook-output",
       name: "SessionStart:startup",
       count: null,
-      chars: 1_207,
-      tokens: 302,
+      chars: 1_200,
+      tokens: 300,
       fromContext: false,
     },
   ],
@@ -1194,7 +1194,7 @@ describe("the fixed load and the compaction", () => {
     );
     // The panel's total is every part's estimate summed.
     expect(panel!.textContent).toContain("Sent on every request");
-    expect(panel!.textContent).toContain("about 30.6K tokens");
+    expect(panel!.textContent).toContain("about 29.2K tokens");
     // The system prompt first, then the five largest tools.
     expect(rows[0]).toContain("System prompt");
     expect(rows[0]).toContain("about 8.5K tokens");
@@ -1233,22 +1233,22 @@ describe("the fixed load and the compaction", () => {
     // What was added at session start stands after the
     // instruction files, each under its own name and count.
     const skills = after.find((row) => row.includes("Skills listing"));
-    expect(skills).toContain("Skills listing · 49 skills");
-    expect(skills).toContain("about 6.2K tokens");
+    expect(skills).toContain("Skills listing · 40 skills");
+    expect(skills).toContain("about 5.0K tokens");
     const servers = after.find((row) =>
       row.includes("MCP server instructions"),
     );
     expect(servers).toContain("MCP server instructions · 2 servers");
-    expect(servers).toContain("about 929 tokens");
+    expect(servers).toContain("about 750 tokens");
     const agents = after.find((row) => row.includes("Subagent types"));
     expect(agents).toContain("Subagent types listing");
-    expect(agents).toContain("about 632 tokens");
+    expect(agents).toContain("about 625 tokens");
     const names = after.find((row) => row.includes("loaded on demand"));
-    expect(names).toContain("Names of tools loaded on demand · 132");
+    expect(names).toContain("Names of tools loaded on demand · 100");
     expect(names).toContain("about 1.0K tokens");
     const hook = after.find((row) => row.includes("Hook output"));
     expect(hook).toContain("Hook output · SessionStart:startup");
-    expect(hook).toContain("about 302 tokens");
+    expect(hook).toContain("about 300 tokens");
   });
 
   it.each([
@@ -1318,7 +1318,7 @@ describe("the fixed load and the compaction", () => {
     expect(reported).toContain("8.3K tokens");
     expect(reported).not.toContain("about");
     const servers = rows.find((row) => row.includes("MCP server instructions"));
-    expect(servers).toContain("about 929 tokens");
+    expect(servers).toContain("about 750 tokens");
     expect(servers).toContain("est.");
     expect(servers).not.toContain("from /context");
   });

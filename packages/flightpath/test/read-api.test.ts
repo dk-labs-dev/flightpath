@@ -62,9 +62,11 @@ import {
   seedTurn,
 } from "./support/seed.js";
 
-// The read API, exercised against the built daemon over HTTP,
-// on a database seeded row by row in the shapes the recorder
-// writes. The fixture's numbers are chosen so the expected
+// The read API, exercised on a database seeded row by row in
+// the shapes the recorder writes: the endpoint, prompt-text
+// and findings sections go through the built daemon over
+// HTTP, the later ones call the read functions in-process.
+// The fixture's numbers are chosen so the expected
 // aggregates can be checked exactly.
 const BASE = Date.now() - 7_200_000;
 const MARKER = "MARKER-TOOL-OUTPUT-7f3a";
@@ -350,7 +352,7 @@ async function seedFixture(dataDir: string): Promise<void> {
     // context-limit rule reads.
     // A live session is one whose process is still running:
     // the fixture notes this test process itself, the way the
-    // hook notes a real session's, so the daemon's session-end
+    // hook notes a Claude Code session's, so the daemon's session-end
     // watch leaves it live however old its timestamps are.
     const hostStartedAt = (await readProcessStartTimes([process.pid])).get(
       process.pid,

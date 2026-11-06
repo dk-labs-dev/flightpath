@@ -24,7 +24,7 @@ import {
 // The tokens lens against a hand-built history: the curve's
 // lines and marks, the room's wording case by case, the
 // plain statements flag by flag, and the load states. The
-// harness is shared with the rises test file.
+// harness is shared with the other lens test files.
 
 setupTokensLensTests(() => Promise.resolve(jsonResponse(200, history())));
 

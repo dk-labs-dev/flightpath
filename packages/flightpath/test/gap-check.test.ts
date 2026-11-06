@@ -13,8 +13,8 @@ import { iso } from "./support/time.js";
 
 // The gap check (scripts/gap-check.mjs) compares a recorded
 // session with its transcript and prints the differences. It
-// runs as a child process against the built dist, like the
-// exit-test run it exists for.
+// runs as a child process against the built dist, as it does
+// when someone runs it by hand.
 
 const here = dirname(fileURLToPath(import.meta.url));
 const script = join(here, "..", "scripts", "gap-check.mjs");

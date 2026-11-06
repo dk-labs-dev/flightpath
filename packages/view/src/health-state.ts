@@ -58,7 +58,7 @@ export function healthAction(problem: HealthProblem): HealthAction {
 }
 
 /** The cause in a sentence, worded from the failure's class.
- * The bind and database classes get the brief's sentences;
+ * The bind and database classes get their own sentences;
  * anything else is the recorded line itself. */
 export function cantStartCause(error: LastError, start: StartProblem): string {
   const at = formatClock(error.at);
@@ -94,8 +94,7 @@ export function waitingLine(health: StreamHealth, now: number): string | null {
   );
 }
 
-/** The dropped events line, in the brief's words — the count
- * and the noun agree. */
+/** The dropped events line; the count and the noun agree. */
 export function droppedLine(dropped: number): string {
   const noun = dropped === 1 ? "event" : "events";
   return (

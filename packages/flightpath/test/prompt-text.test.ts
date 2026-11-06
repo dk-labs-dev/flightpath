@@ -33,8 +33,9 @@ afterEach(async () => {
   await runCleanups();
 });
 
-// One secret per redacted family, built by concatenation so
-// this file holds no credential-shaped literal.
+// One made-up secret per redacted family. The token-shaped
+// ones are built by concatenation so a secret scanner has no
+// literal to flag in this file.
 const SECRETS: { marker: string; secret: string; raw: string }[] = [
   {
     marker: "[redacted:private-key]",

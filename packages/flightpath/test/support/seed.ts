@@ -1,7 +1,9 @@
 // Row builders for tests that seed a database directly, in
 // the shapes the recorder writes: one call per row, every
-// field defaulted, the interesting ones overridden. Each
-// returns the row's id, the given one or the assigned one.
+// field defaulted, the interesting ones overridden. A row
+// with an id returns it, the given one or the assigned one;
+// the conditions, raw-event and request-shape rows return
+// nothing.
 
 import type { DatabaseSync } from "../../src/storage/sqlite.js";
 
@@ -630,7 +632,8 @@ export function seedRequestShape(
  * rises between the requests are planted too: steps with
  * known sizes and result links, a skill load, a compact
  * segment the last requests straddle — the ground truth the
- * fixture generator in the docs plants, row for row.
+ * fixture generator (scripts/regenerate-tokens-fixture.ts)
+ * plants, row for row.
  */
 export function seedPlantedSession(
   db: DatabaseSync,

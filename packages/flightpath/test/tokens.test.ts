@@ -233,7 +233,7 @@ describe("the token history of the planted session", () => {
       sessionId: "sess-start",
       kind: "skill-listing",
       source: "transcript",
-      sizeBytes: 24_851,
+      sizeBytes: 20_000,
     });
     const start = [
       { kind: "skill-listing", sizeBytes: 5_000 },
@@ -745,7 +745,7 @@ describe("the token history", () => {
   });
 
   it.skipIf(process.env.FLIGHTPATH_LONG_TESTS !== "1")(
-    "answers a 5,000-request session in under 200 ms, with no per-request SQL",
+    "builds the history of a 5,000-request session in under 200 ms",
     () => {
       const { storage, db } = makeWorld();
       db.exec("BEGIN");
@@ -1568,7 +1568,7 @@ describe("a rise sized by its result", () => {
       kind: "skill-listing",
       occurredAt: 3_000,
       source: "transcript",
-      sizeBytes: 24_851,
+      sizeBytes: 20_000,
       branchId,
     });
     const items = history(storage, S).rises.flatMap((rise) => rise.items);

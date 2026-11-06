@@ -116,8 +116,7 @@ function generateTranscript(
 describe("long sessions", () => {
   // One memory-and-acknowledgment read at two sizes: a small
   // one runs in the default suite; the 200 MB measurement runs
-  // only when FLIGHTPATH_LONG_TESTS=1, and its numbers are
-  // reported in the pull request that carries the change.
+  // only when FLIGHTPATH_LONG_TESTS=1, and prints its numbers.
   async function memoryRead(pairs: number, boundMb: number): Promise<void> {
     const { root, dataDir } = makeRoot("flightpath-long-", { big: true });
     const sessionId = "sess-big";
@@ -495,8 +494,8 @@ describe("long sessions", () => {
     const stepsPerTurn = 10;
     // One full session as a warmup, so the measured session runs
     // on warm code and a settled allocator; the envelopes of the
-    // warmup share the measured session's id counter space by
-    // using negative received-at stamps.
+    // warmup are stamped well before the measured session, so
+    // they never interleave with its rows.
     for (let turn = 0; turn < turns; turn += 1) {
       const base = T0 - 10_000_000 + turn * (stepsPerTurn + 2) * 1000;
       apply(

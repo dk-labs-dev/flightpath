@@ -225,8 +225,8 @@ function headlines(): string[] {
 }
 
 describe("a rise's headline", () => {
-  // The 30 Oct test's CSV read: the unnamed remainder is the
-  // largest item, and the read is what the rise was.
+  // A CSV read whose unnamed remainder is the largest item,
+  // and the read is what the rise was.
   const csvRise: Rise = {
     id: "rise-4",
     fromRequestId: 3,

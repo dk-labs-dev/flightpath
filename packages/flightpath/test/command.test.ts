@@ -111,7 +111,7 @@ describe("the command hook", () => {
     expect(existsSync(dataDir)).toBe(false);
   });
 
-  it("does nothing for the old single command name", () => {
+  it("does nothing for the bare command name", () => {
     const { env, dataDir } = scratchHome("flightpath-command-", {
       idleMs: "1200",
       stopDaemon: true,
@@ -604,7 +604,7 @@ describe("the recording hook at session start", () => {
     writeSettings(dataDir, { autostart: false });
   }
 
-  it("prints nothing: the notice is the notice hook's job now", () => {
+  it("prints nothing: the notice hook shows the notice", () => {
     const { env } = scratchHome("flightpath-command-", {
       idleMs: "1200",
       stopDaemon: true,

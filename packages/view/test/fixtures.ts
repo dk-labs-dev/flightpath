@@ -182,7 +182,13 @@ export function fixtureSnapshot(): SessionSnapshot {
       },
     ],
     sessionEvents: [
-      { kind: "segment", id: 41, at: 4500, sentence: "Context was compacted" },
+      {
+        kind: "segment",
+        id: 41,
+        at: 4500,
+        segmentKind: "compact",
+        sentence: "Context was compacted",
+      },
     ],
     contextSamples: [
       { at: 1000, contextTokens: 9000 },

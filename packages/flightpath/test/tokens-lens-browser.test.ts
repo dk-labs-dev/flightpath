@@ -1101,9 +1101,8 @@ describe("the tokens lens in a browser", () => {
     expect(roomBox).not.toBeNull();
     if (curveBox === null || roomBox === null) return;
     expect(roomBox.y).toBeGreaterThanOrEqual(curveBox.y + curveBox.height - 1);
-    // The plot keeps its full height at phone width: the
-    // drawing's height no longer shrinks with the screen, so
-    // the words keep the spacing they have on a wide screen.
+    // The plot keeps its full height at phone width, so the
+    // words keep the spacing they have on a wide screen.
     const svgBox = await page.locator("svg.tokens-curve-svg").boundingBox();
     expect(svgBox).not.toBeNull();
     if (svgBox === null) return;

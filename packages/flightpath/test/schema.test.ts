@@ -177,7 +177,7 @@ describe("schema snapshot", () => {
       db.exec("PRAGMA user_version = 19");
       for (const seed of [
         "INSERT INTO sessions (id, status, first_seen_at, last_seen_at, joined_partway) VALUES ('sess-v19', 'ended', 100, 200, 0)",
-        "INSERT INTO loads (session_id, kind, occurred_at, source, size_bytes, item_count) VALUES ('sess-v19', 'skill-listing', 150, 'transcript', 24851, 49)",
+        "INSERT INTO loads (session_id, kind, occurred_at, source, size_bytes, item_count) VALUES ('sess-v19', 'skill-listing', 150, 'transcript', 20000, 40)",
       ]) {
         db.prepare(seed).run();
       }
@@ -185,7 +185,7 @@ describe("schema snapshot", () => {
 
       const storage = openAtLatestVersion(dir);
       expect(storage.loadRows("sess-v19")).toMatchObject([
-        { kind: "skill-listing", itemCount: 49, names: null },
+        { kind: "skill-listing", itemCount: 40, names: null },
       ]);
       storage.close();
     } finally {
@@ -260,7 +260,7 @@ describe("schema snapshot", () => {
       db.exec("PRAGMA user_version = 21");
       for (const seed of [
         "INSERT INTO sessions (id, status, first_seen_at, last_seen_at, joined_partway) VALUES ('sess-v21', 'ended', 100, 200, 0)",
-        "INSERT INTO loads (session_id, kind, occurred_at, source, size_bytes, item_count) VALUES ('sess-v21', 'skill-listing', 150, 'transcript', 24851, 49)",
+        "INSERT INTO loads (session_id, kind, occurred_at, source, size_bytes, item_count) VALUES ('sess-v21', 'skill-listing', 150, 'transcript', 20000, 40)",
       ]) {
         db.prepare(seed).run();
       }
@@ -268,7 +268,7 @@ describe("schema snapshot", () => {
 
       const storage = openAtLatestVersion(dir);
       expect(storage.loadRows("sess-v21")).toMatchObject([
-        { kind: "skill-listing", itemCount: 49, branchId: null },
+        { kind: "skill-listing", itemCount: 40, branchId: null },
       ]);
       storage.close();
     } finally {

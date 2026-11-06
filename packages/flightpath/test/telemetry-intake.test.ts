@@ -799,7 +799,7 @@ describe("the /v1/logs endpoint", () => {
   it("stores JSON exports on /v1/logs once the session is admitted", async () => {
     const { daemon, token, body, dataDir } = await startLogsDaemon();
     // Telemetry applies only once the hooks have admitted the
-    // session, so admit it first, as a real session would.
+    // session, so admit it first, as Claude Code's hooks do.
     const admit = await callDaemon(daemon.port, {
       method: "POST",
       path: "/events/hook",

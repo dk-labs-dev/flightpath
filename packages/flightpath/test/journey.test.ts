@@ -25,7 +25,7 @@ import {
 
 // Scenario tests for the journey builder, fed through the daemon's
 // real ingest path (redaction included) with hand-written event
-// sequences in the shapes the capture sessions produced.
+// sequences in the shapes Claude Code produces.
 
 const T = 1_700_000_000_000;
 
@@ -1314,7 +1314,7 @@ describe("the journey builder", () => {
         at: T + 3000,
         event: userPromptEvent(
           "s1",
-          '<agent-message from="a2e545b890abb9396">\n[Subagent hand-back] PLANTED-HANDBACK-REPORT on the files it read.',
+          '<agent-message from="a000000000000002">\n[Subagent hand-back] PLANTED-HANDBACK-REPORT on the files it read.',
           { prompt_id: "p-handback" },
         ),
       },
