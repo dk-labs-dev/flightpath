@@ -4,8 +4,9 @@ import { defineConfig } from "vitest/config";
 // acknowledgment times, turn-end medians, the health-notice
 // p90, the submit entry's overhead, the steps-lens open and
 // scroll times, the tokens lens's open and scroll times, the
-// settings port move's restart-and-reload time, the stream's
-// acknowledgment p90 and capture-pass times. They run in their own project,
+// end-of-turn line's run time, the settings port move's
+// restart-and-reload time, the stream's acknowledgment p90 and
+// capture-pass times. They run in their own project,
 // serially, and `pnpm test` runs that project last: a budget
 // measured while other suites run measures those suites, so
 // budgets are only ever measured with the machine to
@@ -18,6 +19,7 @@ const budgetFiles = [
   "test/steps-lens-browser.test.ts",
   "test/submit-command-budget.test.ts",
   "test/stream-budget.test.ts",
+  "test/terminal-line-budget.test.ts",
   "test/tokens-lens-budget.test.ts",
 ];
 

@@ -17,6 +17,7 @@ await build({
     "src/daemon.ts",
     "src/command.ts",
     "src/notice.ts",
+    "src/line.ts",
   ],
   outdir: "dist",
   bundle: true,

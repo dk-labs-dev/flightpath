@@ -22,6 +22,7 @@
         "src/command.ts",
         "src/submit-command.ts",
         "src/notice.ts",
+        "src/line.ts",
         "scripts/*.mjs",
         "test/*.test.ts",
       ],

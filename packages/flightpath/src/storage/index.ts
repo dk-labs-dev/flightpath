@@ -28,6 +28,7 @@ import {
   sessionReadMethods,
   sessionWatchMethods,
   streamProbeMethod,
+  turnForPromptMethod,
   type BranchRow,
   type ChangedRow,
   type CompactionFileRow,
@@ -108,6 +109,7 @@ export {
   STEP_ROWS_SQL,
   STREAM_PROBE_SQL,
   TURN_BY_ID_SQL,
+  TURN_FOR_PROMPT_SQL,
   TURN_ROWS_SINCE_SQL,
   TURN_ROWS_SQL,
 } from "./read.js";
@@ -230,6 +232,8 @@ export interface Storage extends TranscriptIngest, TelemetryStore {
   promptAttachmentRows(sessionId: string): PromptAttachmentRow[];
   /** The shapes the session named or its requests were sent with. */
   requestShapeRows(sessionId: string): RequestShapeRow[];
+  /** The id of the session's turn that has this prompt id, if any. */
+  turnIdForPrompt(sessionId: string, promptId: string): number | undefined;
   /** The ids of the session's findings a person dismissed. */
   listDismissals(sessionId: string): string[];
   /** Keep a finding dismissed; dismissing it again changes nothing. */
@@ -606,6 +610,7 @@ export function openStorage(options: { dataDir: string }): Storage {
     ...sessionWatchMethods(db),
     ...sessionLiveRowMethods(db),
     ...streamProbeMethod(db),
+    ...turnForPromptMethod(db),
     ...findingDismissalMethods(db),
     close: () => db.close(),
   };

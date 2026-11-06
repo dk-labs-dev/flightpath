@@ -8,18 +8,19 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { createServer, type Server } from "node:http";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  makeTempRoot,
-  registerCleanup,
-  runCleanups,
-} from "./support/cleanup.js";
+import { makeTempRoot, runCleanups } from "./support/cleanup.js";
 import { distDir, distPath } from "./support/daemon.js";
 import { runDist, runDistAsync, scratchHome } from "./support/process.js";
+import {
+  startClosingServer,
+  startRecordingServer,
+  writeDaemonFiles,
+  type StubServer,
+} from "./support/stub-daemon.js";
 import { packageVersion } from "./support/version.js";
 
 // Integration tests for the built hook script, run as a child
@@ -32,80 +33,17 @@ afterEach(async () => {
   await runCleanups();
 });
 
-interface Received {
-  body: string;
-  token: string | undefined;
-  url: string | undefined;
-}
-
-/** Listen on a loopback port; resolve with it and a closer. */
-function listen(server: Server): Promise<{ port: number; close: () => void }> {
-  return new Promise((resolvePromise) => {
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      const port = typeof address === "object" && address ? address.port : 0;
-      resolvePromise({ port, close: () => server.close() });
-    });
-  });
-}
-
-async function startServer(): Promise<{
-  port: number;
-  received: Received[];
-  close: () => void;
-}> {
-  const received: Received[] = [];
-  const server: Server = createServer((request, response) => {
-    let body = "";
-    request.on("data", (chunk: Buffer) => {
-      body += chunk.toString();
-    });
-    request.on("end", () => {
-      received.push({
-        body,
-        token: request.headers["x-flightpath-token"] as string | undefined,
-        url: request.url,
-      });
-      response.writeHead(200);
-      response.end();
-    });
-  });
-  const { port, close } = await listen(server);
-  return { port, received, close };
-}
-
-function startAnsweringServer(
-  status: number,
-): Promise<{ port: number; close: () => void }> {
-  const server: Server = createServer((request, response) => {
-    request.on("data", () => {});
-    request.on("end", () => {
-      response.writeHead(status);
-      response.end();
-    });
-  });
-  return listen(server);
-}
-
-function startClosingServer(): Promise<{ port: number; close: () => void }> {
-  const server: Server = createServer((request) => {
-    request.socket.destroy();
-  });
-  return listen(server);
-}
-
 interface HookHome {
   env: NodeJS.ProcessEnv;
   dataDir: string;
 }
 
 /** A scratch home whose daemon files point at a test server. */
-function hookHomeFor(server: { port: number; close: () => void }): HookHome {
+function hookHomeFor(server: StubServer): HookHome {
   const { env, dataDir } = scratchHome("flightpath-hook-", {
     idleMs: "1200",
     stopDaemon: true,
   });
-  registerCleanup(server.close);
   writeDaemonFiles(dataDir, server.port);
   return { env, dataDir };
 }
@@ -136,12 +74,6 @@ function hookHomeWithCountingDaemon(): HookHome & {
   env.FP_STUB_MARKER = marker;
   const hook = distWithCountingDaemon();
   return { env, dataDir, marker, hook };
-}
-
-function writeDaemonFiles(dataDir: string, port: number): void {
-  mkdirSync(dataDir, { recursive: true });
-  writeFileSync(join(dataDir, "port"), String(port));
-  writeFileSync(join(dataDir, "token"), "test-token");
 }
 
 function bufferFiles(dataDir: string): string[] {
@@ -187,7 +119,7 @@ const promptEvent = {
 
 describe("the hook script", () => {
   it("delivers a redacted, enveloped event to the daemon", async () => {
-    const server = await startServer();
+    const server = await startRecordingServer();
     const { env, dataDir } = hookHomeFor(server);
 
     // Async spawn: a synchronous one would block this process's
@@ -253,7 +185,7 @@ describe("the hook script", () => {
   }, 60_000);
 
   it("drops a paused session's events and delivers another session's", async () => {
-    const server = await startServer();
+    const server = await startRecordingServer();
     const { env, dataDir } = hookHomeFor(server);
     mkdirSync(join(dataDir, "pause"), { recursive: true });
     writeFileSync(join(dataDir, "pause", "sess-a"), "");
@@ -277,7 +209,7 @@ describe("the hook script", () => {
   });
 
   it("records nothing while the global off flag exists", async () => {
-    const server = await startServer();
+    const server = await startRecordingServer();
     const { env, dataDir } = hookHomeFor(server);
     writeFileSync(join(dataDir, "off"), "");
 
@@ -338,7 +270,7 @@ describe("the hook script", () => {
   });
 
   it("buffers the event when the daemon answers a non-2xx status", async () => {
-    await expectHookBuffers(await startAnsweringServer(500));
+    await expectHookBuffers(await startRecordingServer(500));
   });
 
   it("buffers the event when the daemon closes without replying", async () => {
@@ -346,7 +278,7 @@ describe("the hook script", () => {
   });
 
   it("runs fast against a live daemon", async () => {
-    const server = await startServer();
+    const server = await startRecordingServer();
     const { env } = hookHomeFor(server);
 
     // The measure is overhead, not absolute time: what the hook

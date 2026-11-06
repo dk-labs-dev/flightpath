@@ -195,6 +195,7 @@ export function seedTurn(
     id?: number;
     sessionId: string;
     sequence?: number;
+    promptId?: string | null;
     startedAt?: number | null;
     endedAt?: number | null;
     promptText?: string | null;
@@ -206,9 +207,10 @@ export function seedTurn(
 ): number {
   return run(
     db,
-    "INSERT INTO turns (id, session_id, sequence, started_at, ended_at, prompt_text, flightpath_command, prompt_chars, prompt_lines, image_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO turns (id, session_id, prompt_id, sequence, started_at, ended_at, prompt_text, flightpath_command, prompt_chars, prompt_lines, image_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     overrides.id ?? null,
     overrides.sessionId,
+    overrides.promptId ?? null,
     overrides.sequence ?? 1,
     overrides.startedAt === undefined ? 0 : overrides.startedAt,
     overrides.endedAt ?? null,
