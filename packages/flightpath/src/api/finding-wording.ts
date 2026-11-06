@@ -8,7 +8,7 @@ import type { Finding } from "./payloads.js";
 
 type FindingWording = Pick<
   Finding,
-  "headline" | "body" | "list" | "doc" | "copy"
+  "headline" | "body" | "list" | "more" | "doc" | "copy"
 >;
 
 const EXPIRED_DOC = {
@@ -38,8 +38,8 @@ const SKILLS_DOC = {
   url: "https://code.claude.com/docs/en/skills#find-unused-skills",
 };
 
-// Past this many, the rest are counted: the line stays one a
-// person reads, and the full list is a /skill-doctor away.
+// Past this many, the rest wait behind a control, so the card
+// stays one a person reads at a glance.
 const MAX_NAMED_SKILLS = 10;
 
 export function expiredWording(rebuild: {
@@ -52,6 +52,7 @@ export function expiredWording(rebuild: {
     headline: `Compact before a long break · ${written} written again after ${gap} away`,
     body: "The cache had expired, so the next message wrote the conversation again. You could run /compact before stepping away, or start a fresh session if you are not coming back to this work.",
     list: [],
+    more: [],
     doc: EXPIRED_DOC,
     copy: null,
   };
@@ -66,6 +67,7 @@ export function modelWording(rebuild: {
     headline: `Pick your model at the start of a session · ${formatTokens(rebuild.tokens)} written again after the switch`,
     body: `Switching from ${rebuild.from} to ${rebuild.to} could not reuse the cache, so the conversation was written again. You could choose the model before the first message.`,
     list: [],
+    more: [],
     doc: MODEL_DOC,
     copy: null,
   };
@@ -81,6 +83,7 @@ export function effortWording(rebuild: {
     headline: `Set effort at the start of a session · ${formatTokens(rebuild.tokens)} written again after the change`,
     body: `Changing effort from ${rebuild.from} to ${rebuild.to} on ${rebuild.model} started the cache over. You could pick it before the first message.`,
     list: [],
+    more: [],
     doc: EFFORT_DOC,
     copy: null,
   };
@@ -98,6 +101,7 @@ export function toolsWording(rebuild: {
     headline: `Add or remove tool servers at the start of a session · ${formatTokens(rebuild.tokens)} written again after ${servers} changed`,
     body: "Changing the tool list started the cache over. You could connect the servers you need before the first message.",
     list: [],
+    more: [],
     doc: TOOLS_DOC,
     copy: null,
   };
@@ -120,25 +124,18 @@ export function instructionsWording(startup: {
   tokens: number;
   estimated: boolean;
   files: ListedFile[];
-  more: number;
+  rest: ListedFile[];
 }): FindingWording {
-  const count = startup.files.length + startup.more;
+  const count = startup.files.length + startup.rest.length;
   const size = `${startup.estimated ? "about " : ""}${formatTokens(startup.tokens)}`;
-  const list = startup.files.map(listedFile);
-  if (startup.more > 0) list.push(`and ${startup.more} more`);
   return {
     headline: `Trim the files Claude reads at the start of every session · ${size} across ${count} ${count === 1 ? "file" : "files"}`,
     body: "Always-loaded instruction files are sent with every request. You could move rarely needed parts into skills, which load only when used.",
-    list,
+    list: startup.files.map(listedFile),
+    more: startup.rest.map(listedFile),
     doc: INSTRUCTIONS_DOC,
     copy: null,
   };
-}
-
-function skillLines(names: string[]): string[] {
-  const shown = names.slice(0, MAX_NAMED_SKILLS);
-  const rest = names.length - shown.length;
-  return rest > 0 ? [...shown, `and ${rest} more`] : shown;
 }
 
 // With no names to show, the count is a floor: a used skill
@@ -153,10 +150,12 @@ export function skillsWording(listing: {
   const count = Array.isArray(unused) ? unused.length : unused.atLeast;
   const lead = Array.isArray(unused) ? `${count}` : `At least ${count}`;
   const subject = `${lead} of ${total} listed ${total === 1 ? "skill" : "skills"}`;
+  const names = Array.isArray(unused) ? unused : [];
   return {
     headline: `Turn off skills you don't use · ${listing.estimated ? "about " : ""}${formatTokens(listing.tokens)} per request`,
     body: `${subject} ${count === 1 ? "was" : "were"} never used this session. You could turn off the ones you don't need; /skill-doctor shows each skill's cost and use.`,
-    list: Array.isArray(unused) ? skillLines(unused) : [],
+    list: names.slice(0, MAX_NAMED_SKILLS),
+    more: names.slice(MAX_NAMED_SKILLS),
     doc: SKILLS_DOC,
     copy: null,
   };
@@ -187,6 +186,7 @@ export function denyGapWording(gap: {
     headline: `Block reads of ${NAMES.format(gap.groups)} · ${size} read in this session`,
     body: "Claude read files here that are rarely worth the space. You could add a deny rule so it skips them. A Read deny also blocks edits and writes in those places.",
     list: gap.names,
+    more: [],
     doc: DENY_DOC,
     copy: gap.rules.map((rule) => `"${rule}"`).join(",\n"),
   };

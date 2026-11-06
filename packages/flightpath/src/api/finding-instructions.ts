@@ -111,7 +111,7 @@ export function instructionFindings(data: SessionData): Finding[] {
         tokens: total.tokens,
         estimated: total.basis === "estimated",
         files: listed.slice(0, LISTED_FILES),
-        more: Math.max(0, listed.length - LISTED_FILES),
+        rest: listed.slice(LISTED_FILES),
       }),
     },
   ];

@@ -437,6 +437,62 @@ describe("describeStep", () => {
     expect(sentence("succeeded")).toBe("Handed its report back");
     expect(sentence("open")).toBe("Handing its report back");
   });
+
+  describe("a file path against the project's folder", () => {
+    const sentenceFor = (
+      toolName: string,
+      file_path: string,
+      projectPath: string,
+    ): string =>
+      describeStep(
+        step({ toolName, inputSummary: JSON.stringify({ file_path }) }),
+        { projectPath },
+      ).sentence;
+
+    it("words a file inside the project relative to it", () => {
+      expect(sentenceFor("Read", "/work/app/data/sales.csv", "/work/app")).toBe(
+        "Read data/sales.csv",
+      );
+      expect(sentenceFor("Edit", "/work/app/src/a.ts", "/work/app/")).toBe(
+        "Edited src/a.ts",
+      );
+      expect(sentenceFor("Write", "/work/app/b.md", "/work/app")).toBe(
+        "Wrote b.md",
+      );
+    });
+
+    it("keeps the backslashes and ignores the case of a Windows project", () => {
+      expect(
+        sentenceFor("Read", "C:\\Work\\App\\data\\sales.csv", "c:\\work\\app"),
+      ).toBe("Read data\\sales.csv");
+    });
+
+    it("keeps the full path of a file outside the project", () => {
+      expect(sentenceFor("Read", "/work/notes/a.txt", "/work/app")).toBe(
+        "Read /work/notes/a.txt",
+      );
+    });
+
+    it("keeps the full path of a folder that only shares the project's name", () => {
+      expect(sentenceFor("Read", "/work/app-two/a.txt", "/work/app")).toBe(
+        "Read /work/app-two/a.txt",
+      );
+    });
+
+    it("keeps the full path of a file on a different drive", () => {
+      expect(
+        sentenceFor("Read", "D:\\Work\\App\\data\\sales.csv", "C:\\Work\\App"),
+      ).toBe("Read D:\\Work\\App\\data\\sales.csv");
+    });
+
+    it("words the path in full when it is told no project", () => {
+      const read = step({
+        toolName: "Read",
+        inputSummary: JSON.stringify({ file_path: "/work/app/a.txt" }),
+      });
+      expect(describeStep(read).sentence).toBe("Read /work/app/a.txt");
+    });
+  });
 });
 
 describe("describeHuman", () => {

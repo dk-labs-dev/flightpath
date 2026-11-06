@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 import { FindingsList } from "../src/session/FindingsList.js";
 import { buildRows, type Row } from "../src/session/rows.js";
 import { RowView } from "../src/session/rows-view.js";
+import { findingsQueryKey } from "../src/session/api.js";
 import {
+  gradeClass,
   markerName,
   rowMarkers,
   type RowMarker,
@@ -153,21 +155,54 @@ describe("the session list", () => {
   const toggle = () =>
     harness.container.querySelector<HTMLButtonElement>(".findings-toggle");
 
-  it("starts shut with its region in the page and hidden", async () => {
-    await renderList();
-    const region = harness.container.querySelector("#findings-list-region");
+  const milder = [mixed[1]!, mixed[2]!];
+  const region = () =>
+    harness.container.querySelector<HTMLElement>("#findings-list-region");
+
+  it("starts shut, with its region in the page and hidden, when nothing is worth fixing", async () => {
+    await renderList(milder);
     expect(toggle()?.getAttribute("aria-expanded")).toBe("false");
-    expect(toggle()?.getAttribute("aria-controls")).toBe(region?.id);
-    expect(region?.hasAttribute("hidden")).toBe(true);
+    expect(toggle()?.getAttribute("aria-controls")).toBe(region()?.id);
+    expect(region()?.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("starts open when any finding is worth fixing", async () => {
+    await renderList();
+    expect(toggle()?.getAttribute("aria-expanded")).toBe("true");
+    expect(region()?.hasAttribute("hidden")).toBe(false);
+  });
+
+  it("lets the person shut a list that starts open", async () => {
+    await renderList();
+    act(() => toggle()?.click());
+    expect(toggle()?.getAttribute("aria-expanded")).toBe("false");
+    expect(region()?.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("opens when a finding worth fixing arrives", async () => {
+    await renderList(milder);
+    expect(toggle()?.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => {
+      harness.client.setQueryData(findingsQueryKey("s1"), mixed);
+    });
+    await harness.settle();
+    expect(toggle()?.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("is a heading that holds the toggle and the worst grade's marker", async () => {
+    await renderList();
+    const heading = toggle()?.parentElement;
+    expect(heading?.tagName).toBe("H3");
+    const marker = heading?.querySelector(".grade-marker");
+    expect(marker?.getAttribute("class")).toContain(gradeClass("Worth fixing"));
   });
 
   it("opens to the cards in the API's order", async () => {
-    await renderList();
+    await renderList(milder);
     act(() => toggle()?.click());
     expect(toggle()?.getAttribute("aria-expanded")).toBe("true");
     const grades = [...harness.container.querySelectorAll(".finding-grade")];
     expect(grades.map((g) => g.textContent)).toEqual([
-      "Worth fixing",
       "Worth a look",
       "Did you know",
     ]);
@@ -175,17 +210,13 @@ describe("the session list", () => {
 
   it.each([
     [[], null],
-    [[mixed[1]!], "1 suggestion"],
-    [[mixed[1]!, mixed[2]!], "2 suggestions"],
+    [[mixed[2]!], "1 suggestion · Did you know"],
+    [[mixed[1]!], "1 suggestion · Worth a look"],
+    [milder, "2 suggestions · Worth a look"],
     [mixed, "3 suggestions · 1 worth fixing"],
   ])("reads %j as %s", async (list, line) => {
     await renderList(list);
     expect(toggle()?.textContent ?? null).toBe(line);
-  });
-
-  it("counts only Worth fixing, not every grade", async () => {
-    await renderList([mixed[1]!, mixed[2]!]);
-    expect(toggle()?.textContent).not.toContain("worth fixing");
   });
 
   it("opens the step from a card pinned to a step, and only from such a card", async () => {
@@ -193,7 +224,6 @@ describe("the session list", () => {
       mixed[0]!,
       finding({ id: "t", requestId: 99, turnId: 777 }),
     ]);
-    act(() => toggle()?.click());
     const shows =
       harness.container.querySelectorAll<HTMLButtonElement>(".finding-show");
     expect(shows).toHaveLength(1);

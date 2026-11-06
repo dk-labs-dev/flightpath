@@ -455,6 +455,7 @@ describe("the suggestion", () => {
           "Block reads of node_modules · about 10.0K tokens read in this session",
         body: "Claude read files here that are rarely worth the space. You could add a deny rule so it skips them. A Read deny also blocks edits and writes in those places.",
         list: ["node_modules"],
+        more: [],
         doc: {
           label: "Permissions: read and edit rules",
           url: "https://code.claude.com/docs/en/permissions#read-and-edit",

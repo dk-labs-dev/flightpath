@@ -45,11 +45,11 @@ describe("the keyboard", () => {
       await page.keyboard.press("Enter");
       await expect
         .poll(() => page.locator(".findings-region").isVisible())
-        .toBe(true);
+        .toBe(false);
       await page.keyboard.press("Space");
       await expect
         .poll(() => page.locator(".findings-region").isVisible())
-        .toBe(false);
+        .toBe(true);
       await page.close();
     },
     60_000,

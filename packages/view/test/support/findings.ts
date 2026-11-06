@@ -17,6 +17,7 @@ export function finding(overrides: Partial<Finding> = {}): Finding {
     headline: "Pick your model at the start of a session · 54.9K tokens",
     body: "Switching models could not reuse the cache.",
     list: [],
+    more: [],
     doc: {
       label: "Prompt caching: switching models",
       url: "https://example.test/docs",

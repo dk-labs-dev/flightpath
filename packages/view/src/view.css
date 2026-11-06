@@ -2667,6 +2667,12 @@ button.tokens-lane:hover {
   padding-right: 4px;
 }
 
+/* As an inline box, the "?" button sits on a text baseline with room
+   for descenders under it, which puts it below the pill's centre. */
+.tokens-rise-side .explain {
+  display: flex;
+}
+
 @media (max-width: 760px) {
   .tokens-rise-head {
     grid-template-columns: 22px minmax(70px, auto) minmax(0, 1fr);
@@ -3465,8 +3471,12 @@ button.tokens-lane:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.findings-toggle {
+.findings-heading {
   flex: none;
+  margin: 0;
+}
+
+.findings-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3475,28 +3485,18 @@ button.tokens-lane:hover {
   box-sizing: border-box;
   padding: 10px 16px;
   border: 0;
-  background: var(--paper);
+  background: var(--band);
   color: var(--ink);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
 
-.findings-toggle svg {
+.findings-toggle svg:not(.grade-marker) {
   flex: none;
   color: var(--ink-soft);
-}
-
-.findings-line {
-  font-weight: 600;
-}
-
-.findings-grades {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
 }
 
 .findings-region {
@@ -3550,6 +3550,7 @@ button.tokens-lane:hover {
 }
 
 .finding-items {
+  margin: 0;
   padding-left: 18px;
   color: var(--ink-mid);
   font-family: "Geist Mono", ui-monospace, monospace;
@@ -3590,7 +3591,8 @@ button.tokens-lane:hover {
   flex: none;
 }
 
-.finding-show {
+.finding-show,
+.finding-more {
   min-width: 24px;
   min-height: 24px;
   padding: 0;
@@ -3602,6 +3604,10 @@ button.tokens-lane:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
+}
+
+.finding-more {
+  margin-left: 18px;
 }
 
 .finding-buttons {

@@ -1400,6 +1400,38 @@ describe("the tokens lens in a browser", () => {
     await page.close();
   }, 60_000);
 
+  it.each([390, 1440])(
+    "centres each rise's ? on its link pill at %i px",
+    async (width) => {
+      const page = await newThemedPage(browser, "light", {
+        viewport: { width, height: 844 },
+      });
+      await openTokens(page, PLANTED);
+      await expect.poll(() => page.locator(".tokens-rise").count()).toBe(8);
+      const offsets = await page
+        .locator(".tokens-rise-side")
+        .evaluateAll((sides) =>
+          sides.map((side) => {
+            const pill = side
+              .querySelector(".tokens-rise-link")!
+              .getBoundingClientRect();
+            const button = side
+              .querySelector(".explain-button")!
+              .getBoundingClientRect();
+            return (
+              button.top + button.height / 2 - (pill.top + pill.height / 2)
+            );
+          }),
+        );
+      expect(offsets).toHaveLength(8);
+      for (const offset of offsets) {
+        expect(Math.abs(offset)).toBeLessThanOrEqual(1);
+      }
+      await page.close();
+    },
+    60_000,
+  );
+
   it.each([
     { theme: "light", width: 1440 },
     { theme: "light", width: 390 },

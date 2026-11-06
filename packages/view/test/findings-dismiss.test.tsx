@@ -33,9 +33,10 @@ async function renderOpenList(found = trio) {
     </>,
   );
   await eventually(() => expect(list()).not.toBeNull());
-  act(() =>
-    list()?.querySelector<HTMLButtonElement>(".findings-toggle")?.click(),
-  );
+  const toggle = list()?.querySelector<HTMLButtonElement>(".findings-toggle");
+  if (toggle?.getAttribute("aria-expanded") === "false") {
+    act(() => toggle.click());
+  }
 }
 
 const eventually = (check: () => void) => vi.waitFor(check, { timeout: 3_000 });
@@ -55,11 +56,20 @@ describe("dismissing in the list", () => {
     ]);
     await eventually(() => expect(cards()).toHaveLength(2));
     expect(list()?.querySelector(".findings-line")?.textContent).toBe(
-      "2 suggestions",
+      "2 suggestions · Worth a look",
     );
     expect(
       harness.requests.filter((r) => r === "GET /api/sessions/s1/findings"),
     ).toHaveLength(1);
+  });
+
+  it("keeps the list open when the last finding worth fixing goes", async () => {
+    await renderOpenList();
+    await press(dismissButtons()[0]);
+    await eventually(() => expect(cards()).toHaveLength(2));
+    expect(
+      list()?.querySelector(".findings-toggle")?.getAttribute("aria-expanded"),
+    ).toBe("true");
   });
 
   it("sends nothing more for a second press while the first is pending", async () => {

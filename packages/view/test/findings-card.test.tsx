@@ -96,6 +96,39 @@ describe("a finding's card", () => {
   });
 });
 
+describe("a list cut short", () => {
+  const cut = { list: ["a.md", "b.md"], more: ["c.md", "d.md", "e.md"] };
+  const more = () => q<HTMLButtonElement>(".finding-more");
+  const rest = () =>
+    document.getElementById(more()?.getAttribute("aria-controls") ?? "");
+
+  it("offers the rest behind a button that says how many, shut at first", async () => {
+    await renderCard(cut);
+    expect(more()?.textContent).toBe("and 3 more");
+    expect(more()?.getAttribute("aria-expanded")).toBe("false");
+    expect(rest()?.hasAttribute("hidden")).toBe(true);
+    expect(
+      [...(rest()?.querySelectorAll("li") ?? [])].map((li) => li.textContent),
+    ).toEqual(["c.md", "d.md", "e.md"]);
+  });
+
+  it("shows the rest in place and reads Show fewer, then folds them again", async () => {
+    await renderCard(cut);
+    act(() => more()?.click());
+    expect(more()?.textContent).toBe("Show fewer");
+    expect(more()?.getAttribute("aria-expanded")).toBe("true");
+    expect(rest()?.hasAttribute("hidden")).toBe(false);
+    act(() => more()?.click());
+    expect(more()?.textContent).toBe("and 3 more");
+    expect(rest()?.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("has no button when the list was not cut", async () => {
+    await renderCard({ list: ["a.md"], more: [] });
+    expect(more()).toBeNull();
+  });
+});
+
 describe("Copy", () => {
   const press = async () => {
     await act(async () => q<HTMLButtonElement>(".finding-copy")?.click());

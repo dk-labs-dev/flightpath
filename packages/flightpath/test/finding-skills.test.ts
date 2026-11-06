@@ -98,7 +98,29 @@ describe("skills listed and never used", () => {
         "example-skill-16",
         "example-skill-17",
         "example-skill-18",
-        "and 21 more",
+      ],
+      more: [
+        "example-skill-19",
+        "example-skill-2",
+        "example-skill-20",
+        "example-skill-21",
+        "example-skill-22",
+        "example-skill-23",
+        "example-skill-24",
+        "example-skill-25",
+        "example-skill-26",
+        "example-skill-27",
+        "example-skill-28",
+        "example-skill-29",
+        "example-skill-3",
+        "example-skill-30",
+        "example-skill-31",
+        "example-skill-4",
+        "example-skill-5",
+        "example-skill-6",
+        "example-skill-7",
+        "example-skill-8",
+        "example-skill-9",
       ],
       doc: {
         label: "Skills: find unused skills",
@@ -119,25 +141,27 @@ describe("skills listed and never used", () => {
     });
   });
 
-  it("lists ten and counts the rest when eleven are unused", () => {
+  it("lists ten and holds the rest back when eleven are unused", () => {
     const world = makeSeedWorld("flightpath-skill-findings-");
     seedSession(world.db, { id: SESSION, status: "ended" });
     seedListing(world, {
       names: Array.from({ length: 11 }, (_, i) => `skill-${i}`).reverse(),
     });
-    expect(skillsFinding(world)?.list).toEqual([
-      "skill-0",
-      "skill-1",
-      "skill-10",
-      "skill-2",
-      "skill-3",
-      "skill-4",
-      "skill-5",
-      "skill-6",
-      "skill-7",
-      "skill-8",
-      "and 1 more",
-    ]);
+    expect(skillsFinding(world)).toMatchObject({
+      list: [
+        "skill-0",
+        "skill-1",
+        "skill-10",
+        "skill-2",
+        "skill-3",
+        "skill-4",
+        "skill-5",
+        "skill-6",
+        "skill-7",
+        "skill-8",
+      ],
+      more: ["skill-9"],
+    });
   });
 
   it("agrees with one skill", () => {

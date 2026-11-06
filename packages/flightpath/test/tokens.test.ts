@@ -1582,6 +1582,28 @@ describe("a rise sized by its result", () => {
     );
   });
 
+  it.each([
+    [
+      "inside the session's project",
+      "Read data/records.csv",
+      "/home/user/proj/data/records.csv",
+    ],
+    [
+      "outside the session's project",
+      "Read /home/user/other/records.csv",
+      "/home/user/other/records.csv",
+    ],
+  ])("labels a file %s as %s", (_where, label, filePath) => {
+    const { storage, db } = riseWorld();
+    db.prepare("UPDATE steps SET input_summary = ? WHERE id = 1").run(
+      JSON.stringify({ file_path: filePath }),
+    );
+    const [rise] = history(storage, S).rises;
+    expect(rise?.items).toContainEqual(
+      expect.objectContaining({ kind: "step", label }),
+    );
+  });
+
   it.each(ESTIMATE_KEPT)("keeps the estimate after $name", ({ change }) => {
     const { storage, db } = riseWorld();
     change(db, S);

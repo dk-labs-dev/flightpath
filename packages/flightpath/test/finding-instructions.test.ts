@@ -134,6 +134,7 @@ describe("the instruction files loaded at session start", () => {
           "Trim the files Claude reads at the start of every session · about 12.4K tokens across 1 file",
         body: "Always-loaded instruction files are sent with every request. You could move rarely needed parts into skills, which load only when used.",
         list: ["/home/example/proj/CLAUDE.md · about 12.4K tokens"],
+        more: [],
         doc: {
           label: "Costs: move instructions from CLAUDE.md to skills",
           url: "https://code.claude.com/docs/en/costs#move-instructions-from-claude-md-to-skills",
@@ -162,12 +163,12 @@ describe("the instruction files loaded at session start", () => {
     );
   });
 
-  it("list the five largest, largest first, and count the rest", () => {
+  it("list the five largest, largest first, and hold the rest back", () => {
     const world = seedWorld();
     [4_000, 9_000, 2_000, 12_000, 6_000, 1_000, 3_000].forEach((bytes, index) =>
       loadFile(world, `/p/file-${index}.md`, bytes),
     );
-    const { headline, list } = onlyFinding(world);
+    const { headline, list, more } = onlyFinding(world);
     expect(headline).toContain("across 7 files");
     expect(list).toEqual([
       "/p/file-3.md · about 4.1K tokens",
@@ -175,7 +176,10 @@ describe("the instruction files loaded at session start", () => {
       "/p/file-4.md · about 2.1K tokens",
       "/p/file-0.md · about 1.4K tokens",
       "/p/file-6.md · about 1.0K tokens",
-      "and 2 more",
+    ]);
+    expect(more).toEqual([
+      "/p/file-2.md · about 690 tokens",
+      "/p/file-5.md · about 345 tokens",
     ]);
   });
 });
@@ -349,7 +353,7 @@ describe("the instruction files wording", () => {
         tokens: 6_000,
         estimated: false,
         files: [],
-        more: 0,
+        rest: [],
       }).doc.url,
     ).toBe(
       "https://code.claude.com/docs/en/costs#move-instructions-from-claude-md-to-skills",
