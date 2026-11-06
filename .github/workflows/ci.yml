@@ -1,13 +1,11 @@
 name: CI
 
 # CI is the gate on the public repository: every pull request, every
-# push to main and every merge-queue group runs everything the team
-# used to run by hand — the static checks, the build, and the full
-# test matrix on Linux, Windows and macOS. While the repository is
-# private its hosted minutes are still limited, so the matrices run
-# on Linux only; the three-system lists below key off the
-# repository's visibility, so the day the repository turns public
-# the same workflow runs everything with no edit here.
+# push to main and every merge-queue group runs the static checks,
+# the build, and the full test matrix on Linux, Windows and macOS.
+# The matrices key off the repository's visibility: while it is
+# private they run on Linux only, and they widen to all three
+# systems the day it turns public, with no edit here.
 on:
   pull_request:
   push:
@@ -19,21 +17,33 @@ on:
 permissions:
   contents: read
 
-# A newer run for the same pull request makes the older run's
-# results irrelevant, so superseded runs cancel. The group keys on
-# the pull request number when there is one and on the ref
-# otherwise — a merge-queue group has no pull request number.
+# Only a pull request's newer run makes its older run's results
+# irrelevant, so only pull-request runs cancel in progress. Every
+# other event keys its group on the run id, so two runs for the
+# same ref — two pushes to main, say — both run to the end.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
-env:
-  # Test jobs append the names of tests that passed only on retry
-  # to this file (scripts/retried-tests-reporter.mjs); a step at the
-  # end of each test job puts them in the job summary.
-  FLIGHTPATH_RETRIED_TESTS_FILE: ${{ github.workspace }}/retried-tests.txt
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Which systems the matrices cover, and which runner each system
+  # gets, is decided in one place: scripts/ci-matrix.mjs prints the
+  # lists as JSON, and every matrix job reads them from this job's
+  # outputs.
+  prepare:
+    name: prepare
+    runs-on: ubuntu-latest
+    outputs:
+      runners: ${{ steps.matrix.outputs.runners }}
+      systems: ${{ steps.matrix.outputs.systems }}
+      main-matrix: ${{ steps.matrix.outputs.main-matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: matrix
+        env:
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+        run: node scripts/ci-matrix.mjs >> "$GITHUB_OUTPUT"
+
   # The static checks give the same answer on every system, so they
   # run once, on Linux, beside the tests rather than inside them.
   # The steps after the first still run when an earlier one fails,
@@ -59,7 +69,6 @@ jobs:
 
   # The public half of the audit, run as a gate: no AI attribution
   # in any commit message in the change, and no secret in its diff.
-  # The internal-terms list stays private and is not published here.
   hygiene:
     name: hygiene
     runs-on: ubuntu-latest
@@ -113,11 +122,12 @@ jobs:
   # this run to this run's test jobs, so it is kept for a day.
   build:
     name: build (${{ matrix.os }})
-    runs-on: ${{ fromJSON('{"linux":"ubuntu-latest","windows":"windows-latest","macos":"macos-latest"}')[matrix.os] }}
+    needs: prepare
+    runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(github.event.repository.private && '["linux"]' || '["linux", "windows", "macos"]') }}
+        os: ${{ fromJSON(needs.prepare.outputs.systems) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -130,9 +140,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: |
-            packages/flightpath/dist
-            packages/view/dist
+          path: packages/flightpath/dist
           retention-days: 1
 
   # The main project, split across parallel jobs per system with
@@ -142,12 +150,12 @@ jobs:
   # Windows runner.
   test-main:
     name: main (${{ matrix.os }}, shard ${{ matrix.shard }}/${{ matrix.total }})
-    needs: build
-    runs-on: ${{ fromJSON('{"linux":"ubuntu-latest","windows":"windows-latest","macos":"macos-latest"}')[matrix.os] }}
+    needs: [prepare, build]
+    runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(github.event.repository.private && '[{"os":"linux","shard":1,"total":3},{"os":"linux","shard":2,"total":3},{"os":"linux","shard":3,"total":3}]' || '[{"os":"linux","shard":1,"total":3},{"os":"linux","shard":2,"total":3},{"os":"linux","shard":3,"total":3},{"os":"windows","shard":1,"total":3},{"os":"windows","shard":2,"total":3},{"os":"windows","shard":3,"total":3},{"os":"macos","shard":1,"total":2},{"os":"macos","shard":2,"total":2}]') }}
+        include: ${{ fromJSON(needs.prepare.outputs.main-matrix) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -156,64 +164,32 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The artifact is rooted at packages/ (the two dist folders'
-      # common ancestor), so it is extracted back into packages/.
+      # The artifact holds the built dist folder's contents, so it
+      # is extracted back into packages/flightpath/dist itself.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}/packages
-      # The key carries the Playwright version, so an upgrade never
-      # restores browsers built for the old one. The save is its own
-      # step because a failed run must still keep the browsers it
-      # downloaded.
-      - id: playwright
-        shell: bash
-        run: echo "version=$(pnpm --filter @flightpath/flightpath exec playwright --version | awk '{ print $2 }')" >> "$GITHUB_OUTPUT"
-      - id: browsers
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+          path: ${{ github.workspace }}/packages/flightpath/dist
+      - uses: ./.github/actions/playwright-browsers
         with:
-          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
-          key: playwright-${{ matrix.os }}-${{ steps.playwright.outputs.version }}
-      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
-        run: pnpm --filter @flightpath/flightpath exec playwright install --with-deps chromium
-      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
-          key: ${{ steps.browsers.outputs.cache-primary-key }}
-      # System packages live outside the cached folder, so Linux
-      # needs them again even when the browser itself is cached.
-      - if: ${{ steps.browsers.outputs.cache-hit == 'true' && matrix.os == 'linux' }}
-        run: pnpm --filter @flightpath/flightpath exec playwright install-deps chromium
-      - run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
-      # Option A: a test that passed only on retry is named here, in
-      # the open — the retry never hides it.
+          os: ${{ matrix.os }}
+      - env:
+          FLIGHTPATH_RETRIED_TESTS_FILE: ${{ runner.temp }}/retried-tests.txt
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
-            echo "Tests that passed only on retry:"
-            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            {
-              echo "### Passed only on retry"
-              echo
-              echo "Each test below failed once and passed on its retry (option A). One that keeps appearing here needs fixing for good, not another retry."
-              echo
-              cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        uses: ./.github/actions/retry-summary
 
   # The view package gets its own job: its suite is quick, and
   # bundling it behind the main shards would delay its answer.
   test-view:
     name: view (${{ matrix.os }})
-    needs: build
-    runs-on: ${{ fromJSON('{"linux":"ubuntu-latest","windows":"windows-latest","macos":"macos-latest"}')[matrix.os] }}
+    needs: [prepare, build]
+    runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(github.event.repository.private && '["linux"]' || '["linux", "windows", "macos"]') }}
+        os: ${{ fromJSON(needs.prepare.outputs.systems) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -222,42 +198,34 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The artifact is rooted at packages/ (the two dist folders'
-      # common ancestor), so it is extracted back into packages/.
+      # The artifact holds the built dist folder's contents, so it
+      # is extracted back into packages/flightpath/dist itself.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}/packages
-      - run: pnpm --filter @flightpath/view exec vitest run --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
+          path: ${{ github.workspace }}/packages/flightpath/dist
+      - env:
+          FLIGHTPATH_RETRIED_TESTS_FILE: ${{ runner.temp }}/retried-tests.txt
+        run: pnpm --filter @flightpath/view exec vitest run --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
-            echo "Tests that passed only on retry:"
-            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            {
-              echo "### Passed only on retry"
-              echo
-              echo "Each test below failed once and passed on its retry (option A). One that keeps appearing here needs fixing for good, not another retry."
-              echo
-              cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        uses: ./.github/actions/retry-summary
 
   # The budgets and the hook timing gate run in their own job per
   # system, never beside other test files: a wall-clock budget
-  # measured next to other work measures that work. Hosted macOS
+  # measured next to other work measures that work. They never
+  # retry: a budget that passes only on a second try is exactly
+  # the drift the numbers are meant to show. Hosted macOS
   # runners have no GPU, so the scroll-frame budgets are logged
   # there but not asserted (FLIGHTPATH_NO_GPU).
   test-timing:
     name: timing (${{ matrix.os }})
-    needs: build
-    runs-on: ${{ fromJSON('{"linux":"ubuntu-latest","windows":"windows-latest","macos":"macos-latest"}')[matrix.os] }}
+    needs: [prepare, build]
+    runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(github.event.repository.private && '["linux"]' || '["linux", "windows", "macos"]') }}
+        os: ${{ fromJSON(needs.prepare.outputs.systems) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -266,52 +234,25 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The artifact is rooted at packages/ (the two dist folders'
-      # common ancestor), so it is extracted back into packages/.
+      # The artifact holds the built dist folder's contents, so it
+      # is extracted back into packages/flightpath/dist itself.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}/packages
-      - id: playwright
-        shell: bash
-        run: echo "version=$(pnpm --filter @flightpath/flightpath exec playwright --version | awk '{ print $2 }')" >> "$GITHUB_OUTPUT"
-      - id: browsers
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+          path: ${{ github.workspace }}/packages/flightpath/dist
+      - uses: ./.github/actions/playwright-browsers
         with:
-          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
-          key: playwright-${{ matrix.os }}-${{ steps.playwright.outputs.version }}
-      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
-        run: pnpm --filter @flightpath/flightpath exec playwright install --with-deps chromium
-      - if: ${{ steps.browsers.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ matrix.os == 'linux' && '~/.cache/ms-playwright' || matrix.os == 'macos' && '~/Library/Caches/ms-playwright' || '~/AppData/Local/ms-playwright' }}
-          key: ${{ steps.browsers.outputs.cache-primary-key }}
-      - if: ${{ steps.browsers.outputs.cache-hit == 'true' && matrix.os == 'linux' }}
-        run: pnpm --filter @flightpath/flightpath exec playwright install-deps chromium
+          os: ${{ matrix.os }}
       - env:
           FLIGHTPATH_NO_GPU: ${{ matrix.os == 'macos' && '1' || '' }}
-        run: pnpm --filter @flightpath/flightpath exec vitest run --project budgets --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project budgets
+      # The hook gate borrows the main project's settings, so its
+      # no-retry rule is restated on the command line.
       - if: ${{ !cancelled() }}
         working-directory: packages/flightpath
         env:
           FLIGHTPATH_TIMING_GATE: "1"
-        run: pnpm exec vitest run test/hook-script.test.ts -t "runs fast against a live daemon" --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
-      - name: Name the tests that passed only on retry
-        if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
-            echo "Tests that passed only on retry:"
-            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            {
-              echo "### Passed only on retry"
-              echo
-              echo "Each test below failed once and passed on its retry (option A). One that keeps appearing here needs fixing for good, not another retry."
-              echo
-              cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: pnpm exec vitest run test/hook-script.test.ts -t "runs fast against a live daemon" --retry=0
 
   # The built-in node:sqlite behaves differently across Node release
   # lines, so the files that use it, and the one that checks its
@@ -338,19 +279,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The warning test loads the compiled storage module.
       - run: pnpm --filter @flightpath/flightpath exec tsc -p tsconfig.build.json
-      - run: pnpm --filter @flightpath/flightpath exec vitest run --project node-lines --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
+      - env:
+          FLIGHTPATH_RETRIED_TESTS_FILE: ${{ runner.temp }}/retried-tests.txt
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project node-lines --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          if [ -s "$FLIGHTPATH_RETRIED_TESTS_FILE" ]; then
-            echo "Tests that passed only on retry:"
-            cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            {
-              echo "### Passed only on retry"
-              echo
-              echo "Each test below failed once and passed on its retry (option A). One that keeps appearing here needs fixing for good, not another retry."
-              echo
-              cat "$FLIGHTPATH_RETRIED_TESTS_FILE"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        uses: ./.github/actions/retry-summary

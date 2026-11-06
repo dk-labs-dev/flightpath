@@ -1,0 +1,23 @@
+name: Retried tests summary
+description: >-
+  Names the tests that passed only on retry in the job log and the
+  job summary, reading the file scripts/retried-tests-reporter.mjs
+  appended to during the test run. A failed test is retried once;
+  a test that passed only on retry is named in the summary.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        file="${RUNNER_TEMP}/retried-tests.txt"
+        if [ -s "$file" ]; then
+          echo "Tests that passed only on retry:"
+          cat "$file"
+          {
+            echo "### Passed only on retry"
+            echo
+            echo "Each test below failed once and passed on its retry. A failed test is retried once, and a test that passed only on retry is named here in the open. One that keeps appearing here needs fixing for good, not another retry."
+            echo
+            cat "$file"
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
