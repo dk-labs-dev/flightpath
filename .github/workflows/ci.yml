@@ -6,6 +6,10 @@ name: CI
 # The matrices key off the repository's visibility: while it is
 # private they run on Linux only, and they widen to all three
 # systems the day it turns public, with no edit here.
+# One exception: a pull request that changes only documentation
+# and images runs the static checks and the hygiene checks and
+# skips the build and the tests — there is no code in it for them
+# to run on. Pushes and merge-queue groups never take the shortcut.
 on:
   pull_request:
   push:
@@ -29,7 +33,8 @@ jobs:
   # Which systems the matrices cover, and which runner each system
   # gets, is decided in one place: scripts/ci-matrix.mjs prints the
   # lists as JSON, and every matrix job reads them from this job's
-  # outputs.
+  # outputs. This job also decides, in the same place, whether the
+  # change touches any code at all.
   prepare:
     name: prepare
     runs-on: ubuntu-latest
@@ -37,12 +42,43 @@ jobs:
       runners: ${{ steps.matrix.outputs.runners }}
       systems: ${{ steps.matrix.outputs.systems }}
       main-matrix: ${{ steps.matrix.outputs.main-matrix }}
+      code-changed: ${{ steps.changed.outputs.code-changed }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - id: matrix
         env:
           REPO_PRIVATE: ${{ github.event.repository.private }}
         run: node scripts/ci-matrix.mjs >> "$GITHUB_OUTPUT"
+      # Only a pull request can be documentation-only. Its files
+      # are the ones the base and head commits differ on; a file
+      # outside the documentation patterns makes the whole change
+      # a code change. No files at all counts as a code change, so
+      # an odd event runs everything rather than nothing.
+      - id: changed
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "code-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          if [ -z "$files" ]; then
+            echo "code-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          code=false
+          while IFS= read -r file; do
+            case "$file" in
+              *.md | docs/* | *.png | *.gif) ;;
+              *) code=true ;;
+            esac
+          done <<< "$files"
+          echo "code-changed=$code" >> "$GITHUB_OUTPUT"
 
   # The static checks give the same answer on every system, so they
   # run once, on Linux, beside the tests rather than inside them.
@@ -123,6 +159,7 @@ jobs:
   build:
     name: build (${{ matrix.os }})
     needs: prepare
+    if: ${{ needs.prepare.outputs.code-changed == 'true' }}
     runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
@@ -151,6 +188,7 @@ jobs:
   test-main:
     name: main (${{ matrix.os }}, shard ${{ matrix.shard }}/${{ matrix.total }})
     needs: [prepare, build]
+    if: ${{ needs.prepare.outputs.code-changed == 'true' }}
     runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
@@ -185,6 +223,7 @@ jobs:
   test-view:
     name: view (${{ matrix.os }})
     needs: [prepare, build]
+    if: ${{ needs.prepare.outputs.code-changed == 'true' }}
     runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
@@ -221,6 +260,7 @@ jobs:
   test-timing:
     name: timing (${{ matrix.os }})
     needs: [prepare, build]
+    if: ${{ needs.prepare.outputs.code-changed == 'true' }}
     runs-on: ${{ fromJSON(needs.prepare.outputs.runners)[matrix.os] }}
     strategy:
       fail-fast: false
@@ -261,6 +301,8 @@ jobs:
   # same on every system, so Linux is enough.
   node-lines:
     name: node-lines (${{ matrix.node }})
+    needs: prepare
+    if: ${{ needs.prepare.outputs.code-changed == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
