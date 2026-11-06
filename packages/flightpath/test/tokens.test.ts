@@ -2074,6 +2074,65 @@ describe("the token history's cache rebuilds", () => {
     });
   });
 
+  it("marks a model change that rewrote under half the context, with its cause", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-rebuild-model-partial";
+    seedWarmPair(
+      db,
+      S,
+      { cacheRead: 52_000 },
+      { model: "claude-opus", cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    const result = history(storage, S);
+    expect(result.rebuilds).toHaveLength(1);
+    expect(result.rebuilds[0]).toMatchObject({
+      written: 25_000,
+      cause: { kind: "model", from: "claude-sonnet", to: "claude-opus" },
+    });
+  });
+
+  it("marks an effort change that rewrote under half the context", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-rebuild-effort-partial";
+    seedWarmPair(
+      db,
+      S,
+      { effort: "low", cacheRead: 52_000 },
+      { effort: "high", cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    expect(history(storage, S).rebuilds[0]?.cause).toMatchObject({
+      kind: "effort",
+    });
+  });
+
+  it("marks a tools change that rewrote under half the context", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-rebuild-tools-partial";
+    seedRequestShape(db, { hash: "shape-a" });
+    seedRequestShape(db, { hash: "shape-b" });
+    seedWarmPair(
+      db,
+      S,
+      { shapeHash: "shape-a", cacheRead: 52_000 },
+      { shapeHash: "shape-b", cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    expect(history(storage, S).rebuilds[0]?.cause).toMatchObject({
+      kind: "tools",
+    });
+  });
+
+  it("does not mark a model change that wrote under 5,000 tokens", () => {
+    const { storage, db } = makeWorld();
+    const S = "sess-rebuild-model-small";
+    seedWarmPair(
+      db,
+      S,
+      { cacheRead: 52_000 },
+      { model: "claude-opus", cacheRead: 50_000, cacheWrite1h: 4_999 },
+    );
+    expect(history(storage, S).rebuilds).toHaveLength(0);
+  });
+
   it("is not a rebuild when under half the context was written", () => {
     const { storage, db } = makeWorld();
     const S = "sess-rebuild-under-half";

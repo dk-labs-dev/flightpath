@@ -1031,12 +1031,38 @@ function expiredCause(
  * read from the cache. A request that follows a cold one is
  * still warming up, not rebuilding, however much it writes.
  */
-export function isCacheRebuild(
-  previous: RequestRow,
-  current: RequestRow,
-): boolean {
+function isCacheRebuild(previous: RequestRow, current: RequestRow): boolean {
   return (
     (cacheWriteTokens(current) ?? 0) > requestContextTokens(current) / 2 &&
+    (previous.cacheReadTokens ?? 0) > 0
+  );
+}
+
+// Below this a rewrite is noise: a clean session stays silent.
+export const WRITE_FLOOR = 5_000;
+
+/**
+ * Whether a request rebuilt the cache, either by writing more
+ * than half its context or, after a model, effort or tool-server
+ * change, by writing at least WRITE_FLOOR. Claude Code can reuse
+ * part of the cached prefix across such a change, so the share
+ * written is smaller than a full rebuild's. Other causes keep
+ * the half rule: from the size alone, ordinary growth would
+ * read as a rebuild.
+ */
+export function isRebuildWithCause(
+  previous: RequestRow,
+  current: RequestRow,
+  cause: RebuildCause | null,
+): boolean {
+  if (isCacheRebuild(previous, current)) return true;
+  const changed =
+    cause?.kind === "model" ||
+    cause?.kind === "effort" ||
+    cause?.kind === "tools";
+  return (
+    changed &&
+    (cacheWriteTokens(current) ?? 0) >= WRITE_FLOOR &&
     (previous.cacheReadTokens ?? 0) > 0
   );
 }
@@ -1061,7 +1087,11 @@ export function mainSeries(data: SessionData): RequestRow[] {
  * accepts, in the order they happened, each with its cause. */
 export function rebuildPairs(
   data: SessionData,
-  isRebuild: (previous: RequestRow, current: RequestRow) => boolean,
+  isRebuild: (
+    previous: RequestRow,
+    current: RequestRow,
+    cause: RebuildCause | null,
+  ) => boolean,
 ): RebuildPair[] {
   const requests = mainSeries(data);
   const requestsById = new Map(requests.map((r) => [r.id, r]));
@@ -1070,26 +1100,24 @@ export function rebuildPairs(
     const previous = requestsById.get(from.requestId);
     const current = requestsById.get(to.requestId);
     if (previous === undefined || current === undefined) return;
-    if (!isRebuild(previous, current)) return;
-    pairs.push({
-      previous,
-      current,
-      at: to.at,
-      cause: rebuildCause(data, previous, current, from, to),
-    });
+    const cause = rebuildCause(data, previous, current, from, to);
+    if (!isRebuild(previous, current, cause)) return;
+    pairs.push({ previous, current, at: to.at, cause });
   });
   return pairs;
 }
 
 function cacheRebuilds(data: SessionData): Rebuild[] {
-  return rebuildPairs(data, isCacheRebuild).map(({ current, at, cause }) => ({
-    id: `rebuild-${current.id}`,
-    requestId: current.id,
-    at,
-    written: cacheWriteTokens(current) ?? 0,
-    context: requestContextTokens(current),
-    cause,
-  }));
+  return rebuildPairs(data, isRebuildWithCause).map(
+    ({ current, at, cause }) => ({
+      id: `rebuild-${current.id}`,
+      requestId: current.id,
+      at,
+      written: cacheWriteTokens(current) ?? 0,
+      context: requestContextTokens(current),
+      cause,
+    }),
+  );
 }
 
 export function tokenHistory(
