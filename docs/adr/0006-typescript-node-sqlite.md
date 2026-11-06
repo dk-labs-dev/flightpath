@@ -11,10 +11,12 @@ The plugin needs hook scripts, a long-running local daemon, an embedded database
 - TypeScript everywhere: hook scripts, daemon and web view.
 - Node (current LTS) runtime for scripts and the daemon.
 - SQLite in WAL mode for storage.
-- A lightweight front-end stack chosen in the first web-view ticket, favoring small bundles and no server-side rendering.
+- A lightweight front-end stack chosen when the web view is first built, favoring small bundles and no server-side rendering.
 
 ## Consequences
 
 - Contributors need one toolchain.
 - The SQLite binding must work across macOS, Linux and Windows; this is validated in CI.
 - Hook scripts must start fast; their startup time is measured and kept minimal.
+
+_Erratum, 2026-11-06: wording only, no change to the decision._

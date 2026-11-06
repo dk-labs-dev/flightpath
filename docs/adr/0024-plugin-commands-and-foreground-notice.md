@@ -35,4 +35,4 @@ With the namespaced handler fixed, all eleven commands in the second session wer
 - ADR-0022's mention of `/flightpath` for status and the link now means `/flightpath:status`.
 - Anything shown to users through a hook is verified in a real install, with the hook mode we ship, before we rely on it.
 
-_Erratum, 2026-10-24: references to internal planning reworded without changing the decision._
+_Erratum, 2026-10-24 and 2026-11-06: wording only, no change to the decision._
