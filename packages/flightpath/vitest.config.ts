@@ -1,4 +1,13 @@
+import process from "node:process";
+
 import { defineConfig } from "vitest/config";
+
+// Option A: on CI a failed test is retried once, and the
+// workflow's job summary names every test that passed only on that
+// retry, so a flaky test stays visible instead of being absorbed
+// silently. Local runs never retry — a red test stays red in front
+// of the person who can fix it. A test that fails twice still fails.
+const retry = process.env.CI ? 1 : 0;
 
 // The files whose tests hold wall-clock product budgets —
 // acknowledgment times, turn-end medians, the health-notice
@@ -43,6 +52,7 @@ export default defineConfig({
           name: "main",
           include: ["test/**/*.test.ts"],
           exclude: budgetFiles,
+          retry,
         },
       },
       {
@@ -50,12 +60,14 @@ export default defineConfig({
           name: "budgets",
           include: budgetFiles,
           fileParallelism: false,
+          retry,
         },
       },
       {
         test: {
           name: "node-lines",
           include: nodeLineFiles,
+          retry,
         },
       },
     ],
