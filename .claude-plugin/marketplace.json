@@ -6,7 +6,12 @@
   "plugins": [
     {
       "name": "flightpath",
-      "source": "./packages/flightpath",
+      "source": {
+        "source": "git-subdir",
+        "url": "dk-labs-dev/flightpath",
+        "path": "flightpath",
+        "ref": "release"
+      },
       "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session."
     }
   ]
