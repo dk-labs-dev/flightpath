@@ -245,7 +245,7 @@ const CONTEXT_REPORT = [
   "",
   // Two trailing spaces, as captured.
   "**Model:** claude-sonnet-5-5" + "  ",
-  "**Tokens:** 82.7k / 1m (8%)",
+  "**Tokens:** 64.2k / 1m (6%)",
   "",
   "### Estimated usage by category",
   "",
@@ -253,13 +253,13 @@ const CONTEXT_REPORT = [
   "|----------|--------|------------|",
   "| System prompt | 2.8k | 0.3% |",
   "| System tools | 19.6k | 2.0% |",
-  "| MCP server instructions | 1.3k | 0.1% |",
-  "| MCP tools (deferred) | 35.6k | 3.6% |",
-  "| System tools (deferred) | 23.7k | 2.4% |",
-  "| Memory files | 2.3k | 0.2% |",
-  "| Skills | 8.3k | 0.8% |",
-  "| Messages | 48.4k | 4.8% |",
-  "| Free space | 884.3k | 88.4% |",
+  "| MCP server instructions | 1.1k | 0.1% |",
+  "| MCP tools (deferred) | 26.4k | 2.6% |",
+  "| System tools (deferred) | 18.2k | 1.8% |",
+  "| Memory files | 1.9k | 0.2% |",
+  "| Skills | 5.2k | 0.5% |",
+  "| Messages | 33.6k | 3.4% |",
+  "| Free space | 902.8k | 90.3% |",
   "| Autocompact buffer | 33k | 3.3% |",
   "",
   "### MCP Tools",
@@ -287,21 +287,21 @@ describe("the /context report", () => {
       autocompactBuffer: 33_000,
       systemPrompt: 2_800,
       systemTools: 19_600,
-      mcpInstructions: 1_300,
-      memoryFiles: 2_300,
-      skills: 8_300,
+      mcpInstructions: 1_100,
+      memoryFiles: 1_900,
+      skills: 5_200,
     });
   });
 
   it("reads Memory files, and none when the report lists no such row", () => {
-    expect(parseReport(CONTEXT_REPORT).contextReport?.memoryFiles).toBe(2_300);
+    expect(parseReport(CONTEXT_REPORT).contextReport?.memoryFiles).toBe(1_900);
     const without = CONTEXT_REPORT.replace(
-      "| Memory files | 2.3k | 0.2% |\n",
+      "| Memory files | 1.9k | 0.2% |\n",
       "",
     );
     expect(parseReport(without).contextReport).toMatchObject({
       memoryFiles: null,
-      skills: 8_300,
+      skills: 5_200,
     });
   });
 
@@ -316,31 +316,31 @@ describe("the /context report", () => {
 
   it("reads a category row written in another form as none, and keeps the rest", () => {
     const changed = CONTEXT_REPORT.replace(
-      "| Skills | 8.3k | 0.8% |",
-      "| Skills | about 8k | 0.8% |",
+      "| Skills | 5.2k | 0.5% |",
+      "| Skills | about 5k | 0.5% |",
     );
     expect(parseReport(changed).contextReport).toMatchObject({
       skills: null,
-      mcpInstructions: 1_300,
+      mcpInstructions: 1_100,
     });
   });
 
   it("reads a category size under a thousand written without a unit", () => {
     const changed = CONTEXT_REPORT.replace(
-      "| MCP server instructions | 1.3k | 0.1% |",
+      "| MCP server instructions | 1.1k | 0.1% |",
       "| MCP server instructions | 640 | 0.1% |",
     );
     expect(parseReport(changed).contextReport).toMatchObject({
       mcpInstructions: 640,
       systemPrompt: 2_800,
-      skills: 8_300,
+      skills: 5_200,
     });
   });
 
   it("leaves the report null when a line does not match the format", () => {
     const changed = CONTEXT_REPORT.replace(
-      "**Tokens:** 82.7k / 1m (8%)",
-      "**Tokens:** 82.7k of the window used",
+      "**Tokens:** 64.2k / 1m (6%)",
+      "**Tokens:** 64.2k of the window used",
     );
     expect(parseReport(changed).contextReport).toBeNull();
   });
@@ -365,8 +365,8 @@ describe("the /context report", () => {
 
   it("still measures a report whose lines do not match the format", () => {
     const changed = CONTEXT_REPORT.replace(
-      "**Tokens:** 82.7k / 1m (8%)",
-      "**Tokens:** 82.7k of the window used",
+      "**Tokens:** 64.2k / 1m (6%)",
+      "**Tokens:** 64.2k of the window used",
     );
     expect(parseReport(changed).commandOutput?.chars).toBe(changed.length);
   });
@@ -471,7 +471,7 @@ describe("the /context report", () => {
       ].join("\n");
     await followLines(world, [
       transcriptUserLine(T0 + 1_000, {
-        content: report("claude-sonnet-5-5", "82.7k / 1m (8%)", "33k", "8.3k"),
+        content: report("claude-sonnet-5-5", "64.2k / 1m (6%)", "33k", "5.2k"),
         extra: { isMeta: true },
       }),
       transcriptUserLine(T0 + 2_000, {
