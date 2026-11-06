@@ -2,7 +2,7 @@ import { type Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { expectAxeCleanOnPage } from "./support/axe.js";
-import { startSeededBrowser } from "./support/browser.js";
+import { startSeededBrowser, type SeededBrowser } from "./support/browser.js";
 import { runCleanups } from "./support/cleanup.js";
 import {
   focused,
@@ -17,12 +17,15 @@ import { newThemedPage } from "./support/theme-page.js";
 let address: { base: string; token: string };
 let browser: Browser;
 
-beforeAll(async () => {
+function startFindingsBrowser(): Promise<SeededBrowser> {
   const start = Date.now() - 7 * 60 * 60_000;
-  const started = await startSeededBrowser(
-    "flightpath-findings-layout-",
-    (db) => seedFindingsSession(db, start),
+  return startSeededBrowser("flightpath-findings-layout-", (db) =>
+    seedFindingsSession(db, start),
   );
+}
+
+beforeAll(async () => {
+  const started = await startFindingsBrowser();
   address = { base: started.base, token: started.token };
   browser = started.browser;
 }, 60_000);
@@ -74,16 +77,24 @@ describe("the keyboard", () => {
   it.each(SIZES)(
     "moves focus to the next card when a list card is dismissed at $width px",
     async (viewport) => {
-      const page = await newThemedPage(browser, "light", { viewport });
-      await openFindingsSession(page, address);
-      await openFindingsList(page);
-      await page.locator(".findings-region .finding-dismiss").first().focus();
-      await page.keyboard.press("Enter");
-      await expect
-        .poll(() => page.locator(".findings-region article").count())
-        .toBe(2);
-      await expect.poll(() => focused(page)).toContain("finding-grade");
-      await page.close();
+      // A dismissal is stored, so each width dismisses on its own daemon.
+      const own = await startFindingsBrowser();
+      try {
+        const page = await newThemedPage(own.browser, "light", { viewport });
+        await openFindingsSession(page, own);
+        await openFindingsList(page);
+        await expect
+          .poll(() => page.locator(".findings-region article").count())
+          .toBe(3);
+        await page.locator(".findings-region .finding-dismiss").first().focus();
+        await page.keyboard.press("Enter");
+        await expect
+          .poll(() => page.locator(".findings-region article").count())
+          .toBe(2);
+        await expect.poll(() => focused(page)).toContain("finding-grade");
+      } finally {
+        await own.browser.close();
+      }
     },
     60_000,
   );
