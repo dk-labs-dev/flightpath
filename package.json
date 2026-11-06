@@ -1,4 +1,5 @@
 {
+  "author": "Naga Golla",
   "description": "Flightpath records every Claude Code session live, draws the journey as a map you can explore while it happens, and coaches you on how to make your next session better.",
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
@@ -16,10 +17,15 @@
   "engines": {
     "node": ">=24"
   },
+  "homepage": "https://github.com/dk-labs-dev/flightpath",
   "license": "Apache-2.0",
   "name": "flightpath",
   "packageManager": "pnpm@12.15.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dk-labs-dev/flightpath.git"
+  },
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,6 +34,6 @@
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck"
   },
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module"
 }

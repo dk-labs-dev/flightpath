@@ -37,6 +37,7 @@ import {
 } from "./support/daemon.js";
 import { daemonPromptEnvelope } from "./support/events.js";
 import { firstRow } from "./support/rows.js";
+import { packageVersion } from "./support/version.js";
 
 // The daemon, exercised as the built child process it ships as,
 // against a temporary data folder (ADR-0014 path rules via env).
@@ -104,7 +105,7 @@ describe("the daemon", DAEMON_SUITE, () => {
       version: string;
       uptime_seconds: number;
     };
-    expect(parsed.version).toBe("0.0.0");
+    expect(parsed.version).toBe(packageVersion());
     expect(parsed.uptime_seconds).toBeGreaterThanOrEqual(0);
     if (process.platform !== "win32") {
       expect(statSync(join(dataDir, "token")).mode & 0o777).toBe(0o600);
@@ -173,7 +174,7 @@ describe("the daemon", DAEMON_SUITE, () => {
           method: "POST",
           path: "/events/hook",
           token,
-          body: daemonPromptEnvelope("same-1", Date.now()),
+          body: daemonPromptEnvelope("same-1", Date.now(), packageVersion()),
         })
       ).status,
     ).toBe(204);
@@ -204,7 +205,7 @@ describe("the daemon", DAEMON_SUITE, () => {
           method: "POST",
           path: "/events/hook",
           token,
-          body: daemonPromptEnvelope("next-1", Date.now(), "0.1.0"),
+          body: daemonPromptEnvelope("next-1", Date.now(), "2.0.0"),
         })
       ).status,
     ).toBe(204);
