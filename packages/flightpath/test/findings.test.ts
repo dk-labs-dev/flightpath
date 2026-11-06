@@ -152,6 +152,42 @@ describe("a rebuild after a model switch", () => {
     });
   });
 
+  it("is a finding with its turn when the switch rewrote under half the context", () => {
+    const world = makeSeedWorld("flightpath-findings-");
+    seedWarmPair(
+      world.db,
+      "sess-partial-switch",
+      { ...sonnet, cacheRead: 52_000 },
+      { ...opus, turnId: 1, cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    const [finding] = findingsOf(world, "sess-partial-switch");
+    expect(finding).toMatchObject({
+      kind: "model",
+      grade: "Worth a look",
+      turnId: 1,
+      measure: { tokens: 25_000, basis: "measured" },
+      headline:
+        "Pick your model at the start of a session · 25.0K tokens written again after the switch",
+    });
+  });
+
+  it.each([
+    [4_999, 0],
+    [5_000, 1],
+  ])(
+    "is %i tokens written after a switch that kept most of the cache %i findings",
+    (written, count) => {
+      const world = makeSeedWorld("flightpath-findings-");
+      seedWarmPair(
+        world.db,
+        "sess-small-switch",
+        { ...sonnet, cacheRead: 52_000 },
+        { ...opus, cacheRead: 50_000, cacheWrite1h: written },
+      );
+      expect(findingsOf(world, "sess-small-switch")).toHaveLength(count);
+    },
+  );
+
   it("is a model finding alone when effort changed with the model", () => {
     const world = makeSeedWorld("flightpath-findings-");
     seedWarmPair(
@@ -195,6 +231,32 @@ describe("a rebuild after an effort change", () => {
     },
   );
 
+  it("is a finding on a listed model when the change rewrote under half the context", () => {
+    const world = makeSeedWorld("flightpath-findings-");
+    const model = "claude-opus-4-6";
+    seedWarmPair(
+      world.db,
+      "sess-effort-partial",
+      { model, effort: "low" },
+      { model, effort: "high", cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    expect(findingsOf(world, "sess-effort-partial").map((f) => f.kind)).toEqual(
+      ["effort"],
+    );
+  });
+
+  it("is no finding off the list when the change rewrote under half the context", () => {
+    const world = makeSeedWorld("flightpath-findings-");
+    const model = "claude-opus-5-5";
+    seedWarmPair(
+      world.db,
+      "sess-kept-partial",
+      { model, effort: "low" },
+      { model, effort: "high", cacheRead: 28_800, cacheWrite1h: 25_000 },
+    );
+    expect(findingsOf(world, "sess-kept-partial")).toEqual([]);
+  });
+
   it.each([
     "claude-opus-5-5",
     "claude-model-nobody-captured",
@@ -223,6 +285,7 @@ describe("a rebuild after the tool list changed", () => {
   function toolsFindings(
     before: (typeof read)[],
     after: (typeof read)[],
+    rewrite: PairSeed = {},
   ): Finding[] {
     const world = makeSeedWorld("flightpath-findings-");
     seedRequestShape(world.db, { hash: "shape-a", tools: before });
@@ -231,10 +294,19 @@ describe("a rebuild after the tool list changed", () => {
       world.db,
       "sess-tools",
       { shapeHash: "shape-a" },
-      { shapeHash: "shape-b" },
+      { shapeHash: "shape-b", ...rewrite },
     );
     return findingsOf(world, "sess-tools");
   }
+
+  it("names the server when the change rewrote under half the context", () => {
+    const partial = { cacheRead: 28_800, cacheWrite1h: 25_000 };
+    expect(
+      toolsFindings([read], [read, github], partial).map((f) => f.headline),
+    ).toEqual([
+      "Add or remove tool servers at the start of a session · 25.0K tokens written again after github changed",
+    ]);
+  });
 
   it("names the server whose tool was added", () => {
     const [finding] = toolsFindings([read], [read, github]);
@@ -342,15 +414,30 @@ describe("the size a rebuild must reach", () => {
     expect(findingsOf(world, "sess-floor")).toHaveLength(count);
   });
 
-  it("is no finding for a partial rewrite of 26,000 of a 55,000 context", () => {
+  it("is no finding for a 25,000 token write under half the context with no cause", () => {
     const world = makeSeedWorld("flightpath-findings-");
     seedWarmPair(
       world.db,
       "sess-partial",
-      {},
-      { model: "claude-opus", cacheRead: 28_000, cacheWrite1h: 26_000 },
+      { cacheRead: 52_000 },
+      { cacheRead: 28_800, cacheWrite1h: 25_000 },
     );
     expect(findingsOf(world, "sess-partial")).toEqual([]);
+  });
+
+  it("is no finding for a 25,000 token write under half the context after the cache expired", () => {
+    const world = makeSeedWorld("flightpath-findings-");
+    seedWarmPair(
+      world.db,
+      "sess-partial-expired",
+      { ...ONE_HOUR_CACHE, cacheRead: 52_000 },
+      {
+        startedAt: 1_000 + 70 * MINUTE,
+        cacheRead: 28_800,
+        cacheWrite1h: 25_000,
+      },
+    );
+    expect(findingsOf(world, "sess-partial-expired")).toEqual([]);
   });
 
   it.each([
@@ -360,17 +447,12 @@ describe("the size a rebuild must reach", () => {
     "flags a partial rewrite once input and writes reach 100,000 tokens: %i input beside 99,000 written gives %i findings",
     (input, count) => {
       const world = makeSeedWorld("flightpath-findings-");
-      seedWarmPair(
-        world.db,
-        "sess-break",
-        {},
-        {
-          model: "claude-opus",
-          input,
-          cacheRead: 160_000,
-          cacheWrite1h: 99_000,
-        },
-      );
+      seedWarmPair(world.db, "sess-break", ONE_HOUR_CACHE, {
+        startedAt: 1_000 + 70 * MINUTE,
+        input,
+        cacheRead: 160_000,
+        cacheWrite1h: 99_000,
+      });
       expect(findingsOf(world, "sess-break")).toHaveLength(count);
     },
   );

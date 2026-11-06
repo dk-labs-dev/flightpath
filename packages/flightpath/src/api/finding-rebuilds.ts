@@ -11,12 +11,14 @@ import {
   modelWording,
   toolsWording,
 } from "./finding-wording.js";
-import type { Finding, FindingKind } from "./payloads.js";
+import type { Finding, FindingKind, RebuildCause } from "./payloads.js";
 import type { SessionData } from "./session-data.js";
-import { isCacheRebuild, rebuildPairs, type RebuildPair } from "./tokens.js";
-
-// Below this a rewrite is noise: a clean session stays silent.
-const WRITE_FLOOR = 5_000;
+import {
+  isRebuildWithCause,
+  rebuildPairs,
+  WRITE_FLOOR,
+  type RebuildPair,
+} from "./tokens.js";
 
 // Anthropic's session-report plugin calls a request with more
 // than this many uncached tokens (input plus cache writes) a
@@ -38,9 +40,15 @@ type NamedRebuild = Pick<
 
 // A request after a cold one is warming up, not rebuilding,
 // whatever its size, for the large partial rebuild as well.
-function isReportable(previous: RequestRow, current: RequestRow): boolean {
+function isReportable(
+  previous: RequestRow,
+  current: RequestRow,
+  cause: RebuildCause | null,
+): boolean {
   const written = cacheWriteTokens(current) ?? 0;
-  if (isCacheRebuild(previous, current) && written >= WRITE_FLOOR) return true;
+  if (isRebuildWithCause(previous, current, cause) && written >= WRITE_FLOOR) {
+    return true;
+  }
   const uncached = (current.inputTokens ?? 0) + written;
   return (previous.cacheReadTokens ?? 0) > 0 && uncached >= UNCACHED_BREAK;
 }
