@@ -17,7 +17,11 @@ export {
 export type { StepSummary, TurnHead, TurnSummary } from "./payloads.js";
 export { stepDetail } from "./steps.js";
 export { storageSummary } from "./storage.js";
-export { dismissFinding, sessionFindings } from "./findings.js";
+export {
+  dismissFinding,
+  sessionFindings,
+  sessionTerminalLine,
+} from "./findings.js";
 export { rebuildCauseText } from "./rebuild-cause.js";
 export { sessionTokens, tokenHistory } from "./tokens.js";
 export { contextAtStep, sessionContext } from "./context-at-step.js";

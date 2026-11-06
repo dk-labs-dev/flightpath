@@ -47,6 +47,12 @@ export const GROUP_FIELDS: Record<SettingsGroupId, FieldDef[]> = {
       help: "One line at session start that says whether Flightpath is recording. Problems are always shown.",
     },
     {
+      name: "terminalLine",
+      kind: "switch",
+      label: "Show a note after a turn",
+      help: "One line after Claude's reply when a turn has a suggestion worth a look. Nothing is shown otherwise.",
+    },
+    {
       name: "storePromptText",
       kind: "switch",
       label: "Keep the text of my prompts",

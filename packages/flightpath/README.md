@@ -37,6 +37,11 @@ and your prompts, reduces tool output and Claude's responses to
 their sizes, and scrubs known credential shapes from everything
 it keeps.
 
+When a turn produces a suggestion worth a look, one line after
+Claude's reply points you to `/flightpath:open`. The "Show a
+note after a turn" switch in Settings turns it off, and it adds
+nothing to what Claude sees.
+
 The Steps lens marks each step that has a suggestion with a small
 shape in the suggestion's grade: a filled circle for worth fixing,
 a ring for worth a look, a square for did you know. Opening a
@@ -131,6 +136,9 @@ is running. It holds:
   it.
 - **startupNotice** — show the one-line state notice when a
   session starts.
+- **terminalLine** — print one line after Claude's reply when a
+  turn has a suggestion worth a look. On by default; it applies
+  from the next turn.
 - **telemetry** — also record Claude Code's own telemetry. Off
   unless you turn it on; see below.
 - **excludedFolders** — folders that are never recorded.

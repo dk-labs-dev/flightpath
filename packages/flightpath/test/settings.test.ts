@@ -106,6 +106,17 @@ describe("settings module", () => {
     }
   });
 
+  it("turns the note after a turn on by default and accepts only on or off", () => {
+    expect(defaultSettings().terminalLine).toBe(true);
+    expect(validateSettingsInput({ terminalLine: false })).toEqual({
+      ok: true,
+      values: { terminalLine: false },
+    });
+    const bad = validateSettingsInput({ terminalLine: "yes" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors["terminalLine"]).toBe("must be on or off");
+  });
+
   it("accepts only the five retention periods", () => {
     expect(defaultSettings().retentionDays).toBe(15);
     for (const days of [7, 15, 30, 60, 90]) {
@@ -234,7 +245,7 @@ describe("settings endpoints", DAEMON_SUITE, () => {
     };
     expect(data.settings.port).toBe(4799);
     expect(data.boundPort).toBe(port);
-    expect(data.fields).toHaveLength(8);
+    expect(data.fields).toHaveLength(9);
   });
 
   it("tells the screen the data folder, the kept count and who is recording", async () => {

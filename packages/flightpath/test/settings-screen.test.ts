@@ -43,6 +43,7 @@ interface SettingsReply {
     port: number;
     autostart: boolean;
     startupNotice: boolean;
+    terminalLine: boolean;
     storePromptText: boolean;
     excludedFolders: string[];
     retentionDays: number;
@@ -88,6 +89,7 @@ async function resetViaApi(): Promise<void> {
     JSON.stringify({
       autostart: true,
       startupNotice: true,
+      terminalLine: true,
       storePromptText: true,
       excludedFolders: [],
       retentionDays: 15,
@@ -415,6 +417,29 @@ describe("the settings screen", () => {
     await waitFor(
       async () => (await getSettings()).settings.idleShutdownMinutes === 60,
     );
+    await page.close();
+  }, 120_000);
+
+  it("saves the note after a turn and shows it saved after a reload", async () => {
+    await resetViaApi();
+    const page = await newScreenPage();
+    await openSettings(page);
+    const note = page.locator("#f-terminalLine");
+    expect(await note.getAttribute("aria-checked")).toBe("true");
+    expect(await page.locator(".settings-screen").textContent()).toContain(
+      "One line after Claude's reply when a turn has a suggestion worth a look. Nothing is shown otherwise.",
+    );
+    expect(await page.getByLabel("Show a note after a turn").count()).toBe(1);
+    await note.click();
+    await saveChanges(page);
+    await waitFor(
+      async () => (await getSettings()).settings.terminalLine === false,
+    );
+    await page.reload();
+    await page.waitForSelector("#f-terminalLine");
+    expect(
+      await page.locator("#f-terminalLine").getAttribute("aria-checked"),
+    ).toBe("false");
     await page.close();
   }, 120_000);
 
@@ -890,7 +915,12 @@ describe("the settings screen", () => {
     await resetViaApi();
     const page = await newScreenPage();
     await openSettings(page);
-    for (const id of ["f-autostart", "f-startupNotice", "f-storePromptText"]) {
+    for (const id of [
+      "f-autostart",
+      "f-startupNotice",
+      "f-terminalLine",
+      "f-storePromptText",
+    ]) {
       await waitFor(async () => {
         await page.keyboard.press("Tab");
         return page.evaluate(
@@ -907,7 +937,7 @@ describe("the settings screen", () => {
     }
     const bar = saveBar(page);
     await bar.waitFor({ state: "visible" });
-    expect(await bar.textContent()).toContain("3 unsaved changes");
+    expect(await bar.textContent()).toContain("4 unsaved changes");
     await page.close();
   }, 120_000);
 

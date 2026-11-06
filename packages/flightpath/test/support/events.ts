@@ -33,6 +33,28 @@ export function userPromptEvent(
   });
 }
 
+/** A Stop payload with the keys and types of the recorded ones; the
+ * live hook receives Claude's last message as text. */
+export function stopEvent(
+  sessionId: string,
+  promptId: string,
+  fields: EventFields = {},
+): EventFields {
+  return hookEvent("Stop", {
+    session_id: sessionId,
+    transcript_path: `/home/user/.claude/projects/-work-app/${sessionId}.jsonl`,
+    cwd: "/work/app",
+    prompt_id: promptId,
+    permission_mode: "default",
+    effort: { level: "medium" },
+    stop_hook_active: false,
+    last_assistant_message: "Done. All 14 tests pass.",
+    background_tasks: [],
+    session_crons: [],
+    ...fields,
+  });
+}
+
 /** A command prompt as Claude Code submits it when no expansion follows. */
 export function expandedCommandPrompt(commandName: string): string {
   return `<command-message>${commandName}</command-message>\n<command-name>/${commandName}</command-name>`;

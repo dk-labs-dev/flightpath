@@ -10,6 +10,7 @@ import { rebuildFindings } from "./finding-rebuilds.js";
 import { skillFindings } from "./finding-skills.js";
 import type { Finding, FindingGrade } from "./payloads.js";
 import { loadSessionData, type SessionData } from "./session-data.js";
+import { terminalLine } from "./terminal-line.js";
 
 const GRADE_RANK: Record<FindingGrade, number> = {
   "Worth fixing": 0,
@@ -48,6 +49,20 @@ export function sessionFindings(
   return detectFindings(data)
     .filter((finding) => !dismissed.has(finding.id))
     .sort(byWorth);
+}
+
+/** What the terminal prints when the session's turn with this
+ * prompt id ends; undefined when the session is unknown. A turn
+ * the journey has not recorded gets no line. */
+export function sessionTerminalLine(
+  storage: Storage,
+  sessionId: string,
+  promptId: string,
+): { line: string | null } | undefined {
+  const findings = sessionFindings(storage, sessionId);
+  if (findings === undefined) return undefined;
+  const turnId = storage.turnIdForPrompt(sessionId, promptId);
+  return { line: turnId === undefined ? null : terminalLine(findings, turnId) };
 }
 
 /** Dismiss a finding the session currently produces. False when

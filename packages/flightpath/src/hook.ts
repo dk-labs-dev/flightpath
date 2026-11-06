@@ -7,12 +7,9 @@
 // (ADR-0008, ADR-0021).
 
 import { randomBytes } from "node:crypto";
-import { connect } from "node:net";
 import {
   appendFileSync,
-  existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
   statSync,
   writeFileSync,
@@ -20,7 +17,7 @@ import {
 import { join } from "node:path";
 
 import { BUFFER_LIMIT, noteDropped } from "./buffer.js";
-import { pauseFileName, resolveDataDir } from "./data-dir.js";
+import { isRecordingOff, pauseFileName, resolveDataDir } from "./data-dir.js";
 import type { Envelope } from "./daemon/ingest.js";
 import { ensureDaemon } from "./daemon/spawn.js";
 import { classifyPrompt } from "./prompt-kind.js";
@@ -32,6 +29,8 @@ import {
 import { promptTextColumns } from "./storage/prompt-text.js";
 import { errorMessage } from "./util/errors.js";
 import { readDaemonAddress } from "./util/fs.js";
+import { loopbackRequest } from "./util/loopback.js";
+import { readStdinEvent } from "./util/stdin-event.js";
 import { pluginVersion } from "./version.js";
 // The redaction module is loaded dynamically, after the cheap
 // exits in main(): a paused or switched-off session shouldn't pay
@@ -63,55 +62,17 @@ function logError(dataDir: string, error: unknown): void {
   }
 }
 
-/**
- * One POST to the daemon, written as a raw request over node:net:
- * node:http loads a whole client and server stack (about 26 ms)
- * into a process that sends exactly one request in its life, and
- * node:net loads in about 1. Delivered means a 2xx status line
- * came back; anything else — an error, the timeout, the socket
- * closing first — means the event is buffered instead.
- */
-function deliver(
+/** Delivered means a 2xx reply; anything else means the event is buffered. */
+async function deliver(
   address: { port: number; token: string },
   envelope: Envelope,
 ): Promise<boolean> {
-  return new Promise((resolvePromise) => {
-    const body = JSON.stringify(envelope);
-    let settled = false;
-    const settle = (delivered: boolean) => {
-      if (!settled) {
-        settled = true;
-        resolvePromise(delivered);
-      }
-    };
-    const socket = connect(address.port, "127.0.0.1");
-    socket.setTimeout(DELIVERY_TIMEOUT_MS, () => {
-      socket.destroy();
-      settle(false);
-    });
-    socket.on("error", () => settle(false));
-    socket.on("connect", () => {
-      socket.end(
-        "POST /events/hook HTTP/1.1\r\n" +
-          `Host: 127.0.0.1:${address.port}\r\n` +
-          "Content-Type: application/json\r\n" +
-          `x-flightpath-token: ${address.token}\r\n` +
-          `Content-Length: ${Buffer.byteLength(body)}\r\n` +
-          "Connection: close\r\n" +
-          `\r\n${body}`,
-      );
-    });
-    let head = "";
-    socket.on("data", (chunk: Buffer) => {
-      head += chunk.toString("utf8");
-      const lineEnd = head.indexOf("\r\n");
-      if (lineEnd >= 0) {
-        settle(/^HTTP\/1\.[01] 2\d\d/.test(head.slice(0, lineEnd)));
-        socket.destroy();
-      }
-    });
-    socket.on("close", () => settle(false));
-  });
+  const reply = await loopbackRequest(
+    address,
+    { method: "POST", path: "/events/hook", body: JSON.stringify(envelope) },
+    DELIVERY_TIMEOUT_MS,
+  );
+  return reply !== null && reply.status >= 200 && reply.status < 300;
 }
 
 function bufferEvent(dataDir: string, envelope: Envelope): void {
@@ -131,38 +92,10 @@ function bufferEvent(dataDir: string, envelope: Envelope): void {
   writeFileSync(join(buffer, name), JSON.stringify(envelope), { flag: "wx" });
 }
 
-/** The event on stdin, parsed; null when there is nothing to record. */
-function readStdinEvent(): Record<string, unknown> | null {
-  let raw: string;
-  try {
-    raw = readFileSync(0, "utf8");
-  } catch {
-    return null;
-  }
-  if (raw.trim().length === 0) {
-    return null;
-  }
-  let payload: unknown;
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    Array.isArray(payload)
-  ) {
-    return null;
-  }
-  return payload as Record<string, unknown>;
-}
-
 /**
  * With autostart off, a fresh session starts paused: its pause
  * flag and .auto marker are written here, so the pause check in
- * main drops this event like any other. (The startup notice
- * itself is printed by the separate notice hook, ADR-0024.)
+ * main drops this event like any other.
  */
 function noteAutostartPause(
   dataDir: string,
@@ -187,23 +120,6 @@ function noteAutostartPause(
       logError(dataDir, error);
     }
   }
-}
-
-function isRecordingOff(
-  dataDir: string,
-  event: Record<string, unknown>,
-): boolean {
-  // /flightpath:off writes `off`; /flightpath:stop writes
-  // pause/<session_id>. Either one means this event is not recorded.
-  if (existsSync(join(dataDir, "off"))) {
-    return true;
-  }
-  const sessionId = event.session_id;
-  return (
-    typeof sessionId === "string" &&
-    sessionId.length > 0 &&
-    existsSync(join(dataDir, "pause", pauseFileName(sessionId)))
-  );
 }
 
 /**
