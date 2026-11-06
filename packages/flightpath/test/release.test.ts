@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -50,14 +51,23 @@ const {
   notesForVersion: (changelog: string, version: string) => string;
 } = await import(pathToFileURL(join(scriptsDir, "release-notes.mjs")).href);
 
+type ShippedPackageJson = {
+  name: string;
+  version: string;
+  type: string;
+  license: string;
+};
+
 const {
   pluginFiles,
   copyPlugin,
+  shippedPackageJson,
   channelMarketplace,
   packageRelease,
 }: {
   pluginFiles: (pluginDir: string) => string[];
   copyPlugin: (root: string, target: string) => string[];
+  shippedPackageJson: (pluginDir: string) => ShippedPackageJson;
   channelMarketplace: (channel: string) => Marketplace;
   packageRelease: (root: string, target: string, channel: string) => string[];
 } = await import(pathToFileURL(join(scriptsDir, "package-plugin.mjs")).href);
@@ -154,7 +164,18 @@ function fixtureRepo(withDist: boolean): string {
   write(join(plugin, "scripts", "tool.mjs"), "");
   write(join(plugin, "src", "main.ts"), "");
   write(join(plugin, "test", "own.test.ts"), "");
-  write(join(plugin, "package.json"), "{}");
+  write(
+    join(plugin, "package.json"),
+    JSON.stringify({
+      name: "@flightpath/flightpath",
+      version: "9.9.9",
+      type: "module",
+      license: "Apache-2.0",
+      private: true,
+      scripts: { build: "tsc" },
+      devDependencies: { typescript: "^5.7.2" },
+    }),
+  );
   write(join(plugin, "build.mjs"), "");
   if (withDist) {
     write(join(plugin, "dist", "hook.js"), "");
@@ -175,13 +196,31 @@ describe("the plugin package", () => {
       "commands/stop.md",
       "dist/hook.js",
       "hooks/hooks.json",
+      "package.json",
       "scripts/tool.mjs",
     ]);
     expect(existsSync(join(target, "dist", "hook.js"))).toBe(true);
     expect(existsSync(join(target, "LICENSE"))).toBe(true);
     expect(existsSync(join(target, "NOTICE"))).toBe(true);
     expect(existsSync(join(target, "src"))).toBe(false);
-    expect(existsSync(join(target, "package.json"))).toBe(false);
+  });
+
+  it("writes a package.json with the package's name, version and licence, as a module", () => {
+    const root = fixtureRepo(true);
+    const target = join(root, "out");
+    copyPlugin(root, target);
+    const shipped = JSON.parse(
+      readFileSync(join(target, "package.json"), "utf8"),
+    ) as Record<string, unknown>;
+    expect(shipped).toEqual({
+      name: "@flightpath/flightpath",
+      version: "9.9.9",
+      type: "module",
+      license: "Apache-2.0",
+    });
+    expect(shippedPackageJson(join(root, "packages", "flightpath"))).toEqual(
+      shipped,
+    );
   });
 
   it("refuses to package a tree that has not been built", () => {
@@ -262,6 +301,7 @@ describe("the packaged release folder", () => {
       "flightpath/commands/stop.md",
       "flightpath/dist/hook.js",
       "flightpath/hooks/hooks.json",
+      "flightpath/package.json",
       "flightpath/scripts/tool.mjs",
     ]);
     const written = JSON.parse(
@@ -270,4 +310,76 @@ describe("the packaged release folder", () => {
     expect(written.name).toBe("flightpath-next");
     expect(written.plugins[0]?.source).toBe("./flightpath");
   });
+});
+
+// The tests above check the file list; these run the packaged
+// folder the way a user's machine does. A packaged plugin without
+// a `package.json` of its own still lists the same files, but Node
+// reparses its ES modules with a warning on every hook (and fails
+// them outright under a `commonjs` package above), and the version
+// it reports reads "unknown". Packaging this repository for real
+// and running its entries is the only check that sees either.
+describe("the packaged plugin, run as shipped", () => {
+  const repoRoot = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "..",
+  );
+
+  it("carries the package's version as a module, and its command entry runs clean", () => {
+    const target = mkdtempSync(join(tmpdir(), "flightpath-packaged-"));
+    packageRelease(repoRoot, target, "release");
+    const plugin = join(target, "flightpath");
+    const source = JSON.parse(
+      readFileSync(
+        join(repoRoot, "packages", "flightpath", "package.json"),
+        "utf8",
+      ),
+    ) as ShippedPackageJson;
+    expect(
+      JSON.parse(readFileSync(join(plugin, "package.json"), "utf8")),
+    ).toEqual({
+      name: source.name,
+      version: source.version,
+      type: "module",
+      license: source.license,
+    });
+
+    const home = mkdtempSync(join(tmpdir(), "flightpath-packaged-home-"));
+    const env: NodeJS.ProcessEnv = { ...process.env, HOME: home };
+    delete env.XDG_DATA_HOME;
+    const command = spawnSync(
+      process.execPath,
+      [join(plugin, "dist", "command.js")],
+      {
+        input: JSON.stringify({
+          hook_event_name: "UserPromptExpansion",
+          session_id: "s1",
+          command_name: "flightpath:status",
+          command_args: "",
+        }),
+        env,
+        encoding: "utf8",
+      },
+    );
+    expect(command.stderr).toBe("");
+    expect(command.status).toBe(0);
+    expect(command.stdout).toContain("flightpath is recording");
+
+    const version = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "--eval",
+        `import { pluginVersion } from ${JSON.stringify(
+          pathToFileURL(join(plugin, "dist", "version.js")).href,
+        )}; process.stdout.write(pluginVersion());`,
+      ],
+      { encoding: "utf8" },
+    );
+    expect(version.stderr).toBe("");
+    expect(version.status).toBe(0);
+    expect(version.stdout).toBe(source.version);
+  }, 60_000);
 });
