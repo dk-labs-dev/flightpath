@@ -28,6 +28,7 @@ import {
   followLines,
   makeTelemetryWorld,
   makeTranscriptWorld,
+  makeTranscriptWorldFailingOnce,
 } from "./support/worlds.js";
 
 import { ingestEnvelope, type Envelope } from "../src/daemon/ingest.js";
@@ -65,6 +66,16 @@ type World = ReturnType<typeof makeTranscriptWorld>;
 
 function dbRows(world: World, sql: string): Record<string, unknown>[] {
   return queryRows(join(world.dataDir, "flightpath.db"), sql);
+}
+
+/** What a read stored about files, attachments and steps, without row ids. */
+function storedFilesAndSteps(world: World): Record<string, unknown>[][] {
+  return [
+    "SELECT at, name, size_bytes, reread FROM compaction_files ORDER BY at, name",
+    "SELECT kind, name, size_bytes FROM prompt_attachments ORDER BY kind, name",
+    "SELECT kind, file_path, size_bytes, line_count, occurred_at FROM loads WHERE kind LIKE 'skill%' ORDER BY kind, file_path",
+    "SELECT tool_use_id, tool_name, outcome FROM steps ORDER BY tool_use_id",
+  ].map((sql) => dbRows(world, sql));
 }
 
 function seedSession(world: World, projectPath: string): void {
@@ -1798,6 +1809,30 @@ describe("a skill's text and files", () => {
     expect(allStoredText(world.storage)).not.toContain("FILE-MARKER");
   });
 
+  it("records the files a skill attached as its own when a failed chunk is read again", async () => {
+    const lines = [
+      ...skillCallLines(),
+      skillTextLine(SKILL_TEXT_AT, 14_000),
+      skillFileLine(SKILL_TEXT_AT, "docs/a.md", 600),
+      skillFileLine(SKILL_TEXT_AT, "docs/b.md", 40),
+      nextRequest(),
+    ];
+    const clean = makeTranscriptWorld();
+    seedSkill(clean);
+    await followLines(clean, lines);
+
+    const world = makeTranscriptWorldFailingOnce("req-2");
+    seedSkill(world);
+    // The first chunk ends right after the skill's text; the
+    // second holds its files, then the request that fails.
+    await followLines(world, lines.slice(0, 4));
+    await expect(followLines(world, lines)).rejects.toThrow("storage is down");
+    await followLines(world, lines);
+
+    expect(storedFilesAndSteps(world)).toEqual(storedFilesAndSteps(clean));
+    expect(loadsOf(world, "skill-file")).toHaveLength(2);
+  });
+
   it("records the files a skill attached though they are stamped before its text", async () => {
     const world = makeTranscriptWorld();
     seedSkill(world);
@@ -2018,6 +2053,26 @@ describe("files put back after a compaction", () => {
     ).toEqual([]);
     const stored = allStoredText(world.storage);
     expect(stored).not.toContain("CONTENT-MARKER");
+  });
+
+  it("records the files a failed chunk held as the compaction's when it is read again", async () => {
+    const clean = makeTranscriptWorld();
+    seedSession(clean, "/home/user/proj-a");
+    await followLines(clean, compactionLines());
+
+    const world = makeTranscriptWorldFailingOnce("req-2");
+    seedSession(world, "/home/user/proj-a");
+    // The first chunk ends with the compaction still open; the
+    // second holds a restored file, then the request that fails.
+    const lines = compactionLines();
+    await followLines(world, lines.slice(0, 5));
+    await expect(followLines(world, lines)).rejects.toThrow("storage is down");
+    await followLines(world, lines);
+
+    expect(storedFilesAndSteps(world)).toEqual(storedFilesAndSteps(clean));
+    expect(
+      dbRows(world, "SELECT name FROM prompt_attachments WHERE kind = 'file'"),
+    ).toEqual([]);
   });
 
   it("keeps a file attached to the next prompt as that prompt's own", async () => {

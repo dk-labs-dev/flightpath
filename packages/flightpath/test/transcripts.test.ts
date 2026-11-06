@@ -34,6 +34,7 @@ import {
   followLines,
   importTranscriptLines,
   makeTranscriptWorld,
+  makeTranscriptWorldFailingOnce,
   seedImportWorld,
 } from "./support/worlds.js";
 
@@ -921,26 +922,11 @@ describe("live follow", () => {
   });
 
   it("re-reads lines whose applying failed, on the next follow", async () => {
-    const world = makeTranscriptWorld();
+    // The request write fails once: the offset must not move
+    // past the lines that failed.
+    const world = makeTranscriptWorldFailingOnce("req-1");
     seedLiveSession(world.storage);
-    // A follower over a storage whose request write fails once:
-    // the offset must not move past the lines that failed.
-    let failures = 1;
-    const flaky: Storage = {
-      ...world.storage,
-      upsertRequest: (input) => {
-        if (failures > 0) {
-          failures -= 1;
-          throw new Error("storage is down");
-        }
-        return world.storage.upsertRequest(input);
-      },
-    };
-    const follower = createTranscriptFollower(flaky, {
-      dataDir: world.dataDir,
-      configDir: world.configDir,
-      settings: () => defaultSettings(),
-    });
+    const { follower } = world;
     const mainPath = join(world.root, "sess-live.jsonl");
     writeFileSync(
       mainPath,

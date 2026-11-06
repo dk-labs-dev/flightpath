@@ -1296,6 +1296,45 @@ function applyShapeEntry(
   }
 }
 
+interface ChunkSnapshot {
+  file: FileState;
+  partialMarked: boolean;
+  versionNoted: string | undefined;
+}
+
+/**
+ * Every field of the file's state, with its collections copied:
+ * applying edits them in place, and a field left out of the
+ * snapshot would survive a rollback.
+ */
+function snapshotChunkState(
+  state: SessionState,
+  file: FileState,
+): ChunkSnapshot {
+  return {
+    file: {
+      ...file,
+      pendingToolUse: [...file.pendingToolUse],
+      landedResults: new Map(file.landedResults),
+      toolCalls: new Map(file.toolCalls),
+      pendingApiRequests: new Map(file.pendingApiRequests),
+      openingToRecord: new Set(file.openingToRecord),
+    },
+    partialMarked: state.partialMarked,
+    versionNoted: state.versionNoted,
+  };
+}
+
+function restoreChunkState(
+  state: SessionState,
+  file: FileState,
+  snapshot: ChunkSnapshot,
+): void {
+  Object.assign(file, snapshot.file);
+  state.partialMarked = snapshot.partialMarked;
+  state.versionNoted = snapshot.versionNoted;
+}
+
 async function followFile(
   ctx: FollowerContext,
   sessionId: string,
@@ -1319,15 +1358,7 @@ async function followFile(
       // left set (tokens marked partial, a version noted, a
       // pending id) would make the re-read skip a write it
       // believes already happened.
-      const pendingBefore = [...file.pendingToolUse];
-      const turnBefore = file.currentTurnId;
-      const landedBefore = new Map(file.landedResults);
-      const toolCallsBefore = new Map(file.toolCalls);
-      const lastRequestBefore = file.lastRequestRowId;
-      const pendingApiBefore = new Map(file.pendingApiRequests);
-      const openingBefore = new Set(file.openingToRecord);
-      const partialMarkedBefore = state.partialMarked;
-      const versionNotedBefore = state.versionNoted;
+      const before = snapshotChunkState(state, file);
       try {
         ctx.storage.transaction(() => {
           for (const line of read.lines) {
@@ -1335,15 +1366,7 @@ async function followFile(
           }
         });
       } catch (error) {
-        file.pendingToolUse = pendingBefore;
-        file.currentTurnId = turnBefore;
-        file.landedResults = landedBefore;
-        file.toolCalls = toolCallsBefore;
-        file.lastRequestRowId = lastRequestBefore;
-        file.pendingApiRequests = pendingApiBefore;
-        file.openingToRecord = openingBefore;
-        state.partialMarked = partialMarkedBefore;
-        state.versionNoted = versionNotedBefore;
+        restoreChunkState(state, file, before);
         throw error;
       }
     }
