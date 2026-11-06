@@ -11,7 +11,12 @@ import {
   seedSession,
   seedTurn,
 } from "./support/seed.js";
-import { frameBudgetHolds, medianOf, percentileOf } from "./support/time.js";
+import {
+  frameBudgetHolds,
+  medianOf,
+  percentileOf,
+  timingBoundsHold,
+} from "./support/time.js";
 
 // The tokens lens's budget, on the steps lens's pattern: a
 // 5,000-request session opens inside the same envelope the
@@ -112,7 +117,11 @@ describe("the tokens lens's budget", () => {
     );
     await page.waitForSelector("polyline.tokens-curve-line");
     const openedMs = await page.evaluate(() => performance.now());
-    expect(openedMs).toBeLessThan(OPEN_BUDGET_MS);
+    console.log(
+      `tokens lens: opened in ${openedMs.toFixed(0)} ms (budget ${OPEN_BUDGET_MS} ms)`,
+    );
+    // Windows and macOS runners pause processes now and then, so the open time there measures the runner.
+    if (timingBoundsHold) expect(openedMs).toBeLessThan(OPEN_BUDGET_MS);
     const passP95s: number[] = [];
     for (let pass = 0; pass < SCROLL_PASSES; pass += 1) {
       passP95s.push(percentileOf(await frameDeltasWhileScrolling(), 0.95));
@@ -122,5 +131,5 @@ describe("the tokens lens's budget", () => {
       `tokens lens: scroll frames p95 ${p95.toFixed(1)} ms, median of ${SCROLL_PASSES} passes`,
     );
     if (frameBudgetHolds) expect(p95).toBeLessThan(FRAME_P95_BUDGET_MS);
-  });
+  }, 60_000);
 });

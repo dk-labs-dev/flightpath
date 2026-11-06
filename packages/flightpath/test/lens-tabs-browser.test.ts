@@ -24,6 +24,7 @@ declare global {
 // than the kept-days setting.
 const T0 = Date.now() - 900_000;
 const SESSION = "tabs-session";
+const SESSION_TITLE = "Build a tip calculator";
 const SCROLL_SESSION = "scroll-session";
 // The tabs session is seeded first in a fresh database, so
 // its three steps hold the ids 1, 2, 3 in seeding order.
@@ -38,7 +39,7 @@ function seedTabsSession(db: DatabaseSync): void {
     id: SESSION,
     projectPath: "/home/user/tip-calc",
     start: T0,
-    prompt: "Build a tip calculator",
+    prompt: SESSION_TITLE,
     steps: [
       { toolName: "Bash", input: { command: "npm test" } },
       {
@@ -89,6 +90,13 @@ async function openSession(page: Page): Promise<void> {
   await page.goto(`${base}/#session/${SESSION}&token=${token}`);
   await page.waitForSelector(".summary");
   await page.waitForSelector(".trow");
+}
+
+// Searching opens every day's group, so the session is found whatever the hour.
+async function openList(page: Page): Promise<void> {
+  await page.goto(`${base}/#sessions&token=${token}`);
+  await page.locator("#picker-search").fill(SESSION_TITLE);
+  await page.waitForSelector(`a[href="#session/${SESSION}"]`);
 }
 
 async function tabSelected(page: Page, lens: string): Promise<string | null> {
@@ -281,8 +289,7 @@ describe("the lens tabs in a browser", () => {
     const page = await browser.newPage({
       viewport: { width: 1440, height: 900 },
     });
-    await page.goto(`${base}/#sessions&token=${token}`);
-    await page.waitForSelector(`a[href="#session/${SESSION}"]`);
+    await openList(page);
     await page.locator(`a[href="#session/${SESSION}"]`).click();
     await page.waitForSelector(".summary");
     for (const stepId of STEPS) {
@@ -298,7 +305,9 @@ describe("the lens tabs in a browser", () => {
         page.evaluate(() => document.querySelector(".session-screen") === null),
       )
       .toBe(true);
-    await expect.poll(() => hashOf(page)).toBe("#sessions");
+    await expect
+      .poll(() => hashOf(page))
+      .toBe(`#sessions?q=${SESSION_TITLE.replaceAll(" ", "+")}`);
     await page.close();
   }, 60_000);
 
@@ -448,8 +457,7 @@ describe("the lens tabs in a browser", () => {
           );
         await expectAxeCleanOnPage(page);
       }
-      await page.goto(`${base}/#sessions&token=${token}`);
-      await page.waitForSelector(`a[href="#session/${SESSION}"]`);
+      await openList(page);
       await expectAxeCleanOnPage(page);
       await page.goto(`${base}/#settings&token=${token}`);
       await page.waitForSelector("#group-appearance-h");
