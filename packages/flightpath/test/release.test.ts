@@ -182,6 +182,7 @@ function fixtureRepo(withDist: boolean): string {
   }
   write(join(root, "LICENSE"), "");
   write(join(root, "NOTICE"), "");
+  write(join(root, "THIRD-PARTY-NOTICES"), "");
   return root;
 }
 
@@ -193,6 +194,7 @@ describe("the plugin package", () => {
       ".claude-plugin/plugin.json",
       "LICENSE",
       "NOTICE",
+      "THIRD-PARTY-NOTICES",
       "commands/stop.md",
       "dist/hook.js",
       "hooks/hooks.json",
@@ -202,6 +204,7 @@ describe("the plugin package", () => {
     expect(existsSync(join(target, "dist", "hook.js"))).toBe(true);
     expect(existsSync(join(target, "LICENSE"))).toBe(true);
     expect(existsSync(join(target, "NOTICE"))).toBe(true);
+    expect(existsSync(join(target, "THIRD-PARTY-NOTICES"))).toBe(true);
     expect(existsSync(join(target, "src"))).toBe(false);
   });
 
@@ -298,6 +301,7 @@ describe("the packaged release folder", () => {
       "flightpath/.claude-plugin/plugin.json",
       "flightpath/LICENSE",
       "flightpath/NOTICE",
+      "flightpath/THIRD-PARTY-NOTICES",
       "flightpath/commands/stop.md",
       "flightpath/dist/hook.js",
       "flightpath/hooks/hooks.json",
@@ -345,6 +349,9 @@ describe("the packaged plugin, run as shipped", () => {
       type: "module",
       license: source.license,
     });
+    expect(readFileSync(join(plugin, "THIRD-PARTY-NOTICES"), "utf8")).toBe(
+      readFileSync(join(repoRoot, "THIRD-PARTY-NOTICES"), "utf8"),
+    );
 
     const home = mkdtempSync(join(tmpdir(), "flightpath-packaged-home-"));
     const env: NodeJS.ProcessEnv = { ...process.env, HOME: home };

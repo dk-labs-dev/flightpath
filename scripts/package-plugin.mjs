@@ -3,8 +3,8 @@
 // the channel's marketplace and points at the plugin folder beside
 // it, `flightpath/`, which holds `packages/flightpath` as built
 // (with `dist/`), without the sources, tests and tooling a user
-// never runs, plus the LICENSE and NOTICE from the repository
-// root and a `package.json` written for the folder.
+// never runs, plus LICENSE, NOTICE and THIRD-PARTY-NOTICES from
+// the repository root and a `package.json` written for the folder.
 //
 // The release workflow zips this folder for the GitHub release and
 // commits the same folder to the channel branch, so the zip and the
@@ -89,9 +89,9 @@ export function shippedPackageJson(pluginDir) {
 }
 
 // Copies the plugin folder under `root` into `target`, with the
-// LICENSE and NOTICE from the repository root and the shipped
-// `package.json` written into it. The tree must have been built
-// first: without `dist/` the hooks have nothing to run, and
+// LICENSE, NOTICE and THIRD-PARTY-NOTICES from the repository root and
+// the shipped `package.json` written into it. The tree must have been
+// built first: without `dist/` the hooks have nothing to run, and
 // packaging anyway would ship a plugin that cannot start.
 export function copyPlugin(root, target) {
   const pluginDir = join(root, "packages", "flightpath");
@@ -106,14 +106,20 @@ export function copyPlugin(root, target) {
     mkdirSync(dirname(destination), { recursive: true });
     cpSync(join(pluginDir, file), destination);
   }
-  for (const file of ["LICENSE", "NOTICE"]) {
+  for (const file of ["LICENSE", "NOTICE", "THIRD-PARTY-NOTICES"]) {
     cpSync(join(root, file), join(target, file));
   }
   writeFileSync(
     join(target, "package.json"),
     JSON.stringify(shippedPackageJson(pluginDir), null, 2) + "\n",
   );
-  return [...files, "LICENSE", "NOTICE", "package.json"].sort();
+  return [
+    ...files,
+    "LICENSE",
+    "NOTICE",
+    "THIRD-PARTY-NOTICES",
+    "package.json",
+  ].sort();
 }
 
 // The marketplace file a channel carries. Its one entry resolves to
