@@ -156,10 +156,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The artifact is rooted at packages/ (the two dist folders'
+      # common ancestor), so it is extracted back into packages/.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}
+          path: ${{ github.workspace }}/packages
       # The key carries the Playwright version, so an upgrade never
       # restores browsers built for the old one. The save is its own
       # step because a failed run must still keep the browsers it
@@ -218,10 +220,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The artifact is rooted at packages/ (the two dist folders'
+      # common ancestor), so it is extracted back into packages/.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}
+          path: ${{ github.workspace }}/packages
       - run: pnpm --filter @flightpath/view exec vitest run --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
@@ -258,10 +262,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The artifact is rooted at packages/ (the two dist folders'
+      # common ancestor), so it is extracted back into packages/.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ matrix.os }}
-          path: ${{ github.workspace }}
+          path: ${{ github.workspace }}/packages
       - id: playwright
         shell: bash
         run: echo "version=$(pnpm --filter @flightpath/flightpath exec playwright --version | awk '{ print $2 }')" >> "$GITHUB_OUTPUT"
