@@ -1,95 +1,60 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, symlinkSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { makeTempRoot, runCleanups } from "./support/cleanup.js";
-import { distDir, distPath } from "./support/daemon.js";
+import { distPath } from "./support/daemon.js";
 
-// The shell guard in hooks.json covers a machine with no node; the
-// banner esbuild puts on every bundled entry covers one with an old
-// node. Both are checked on what ships: the registered commands and
-// the built files.
+// Hooks are registered in exec form so that no shell parses them: a
+// shell command works on bash and not on the PowerShell Claude Code
+// falls back to on Windows. The banner esbuild puts on every bundled
+// entry covers a Node that is too old. Both are checked on what
+// ships: the registered hooks and the built files.
 
-interface HookCommand {
+interface Hook {
   command: string;
+  args?: string[];
 }
 
 const hooksConfig = JSON.parse(
   readFileSync(new URL("../hooks/hooks.json", import.meta.url), "utf8"),
-) as { hooks: Record<string, { hooks: HookCommand[] }[]> };
+) as { hooks: Record<string, { hooks: Hook[] }[]> };
 
-const commands = Object.values(hooksConfig.hooks)
+const hooks = Object.values(hooksConfig.hooks)
   .flat()
-  .flatMap((entry) => entry.hooks.map((hook) => hook.command));
+  .flatMap((entry) => entry.hooks);
 
-const SILENT_GUARD = "command -v node >/dev/null 2>&1 || exit 0; ";
-const NO_NODE_LINE =
-  '{"systemMessage":"● flightpath needs Node 24 or later, and none was found · see Install in the README"}';
-const PRINTING_GUARD = `command -v node >/dev/null 2>&1 || { printf '%s\\n' '${NO_NODE_LINE}'; exit 0; }; `;
-const RUN_ENTRY = /node "\$\{CLAUDE_PLUGIN_ROOT\}\/dist\/([\w-]+\.js)"$/;
+const ENTRY_PATH = /^\$\{CLAUDE_PLUGIN_ROOT\}\/dist\/([\w-]+\.js)$/;
 
-const noticeCommand = commands.filter((command) => command.includes("notice"));
-const recordingCommand = commands.find((command) =>
-  command.endsWith('/dist/hook.js"'),
-);
+function entryOf(hook: Hook): string | undefined {
+  return ENTRY_PATH.exec(hook.args?.[0] ?? "")?.[1];
+}
 
-afterEach(runCleanups);
-
-describe("the guard in hooks.json", () => {
-  it("opens every command except the startup notice with the silent exit", () => {
-    const others = commands.filter((command) => !command.includes("notice"));
-    expect(others.length).toBeGreaterThan(1);
-    for (const command of others) {
-      expect(command.startsWith(SILENT_GUARD), command).toBe(true);
+describe("the hooks in hooks.json", () => {
+  it("run node directly, with the entry as its one argument", () => {
+    expect(hooks.length).toBeGreaterThan(1);
+    for (const hook of hooks) {
+      expect(hook.command, JSON.stringify(hook)).toBe("node");
+      expect(hook.args, JSON.stringify(hook)).toHaveLength(1);
     }
   });
 
-  it("opens the startup notice's command with the form that prints the no-Node line", () => {
-    expect(noticeCommand).toHaveLength(1);
-    expect(noticeCommand[0]?.startsWith(PRINTING_GUARD)).toBe(true);
+  it("name an entry that is built", () => {
+    for (const hook of hooks) {
+      const entry = entryOf(hook);
+      expect(entry, JSON.stringify(hook)).toBeDefined();
+      expect(existsSync(distPath(entry ?? "")), JSON.stringify(hook)).toBe(
+        true,
+      );
+    }
   });
 
-  it("ends every command by running a built entry", () => {
-    for (const command of commands) {
-      const entry = RUN_ENTRY.exec(command)?.[1];
-      expect(entry, command).toBeDefined();
-      expect(existsSync(distPath(entry ?? "")), command).toBe(true);
-    }
+  it("register each of the four entries", () => {
+    expect(new Set(hooks.map(entryOf))).toEqual(
+      new Set(["hook.js", "notice.js", "submit-command.js", "command.js"]),
+    );
   });
 });
-
-describe.skipIf(process.platform === "win32")(
-  "a command with no node on the PATH",
-  // Windows runs hook commands through a shell this test can't
-  // stand in for with a symlink to sh.
-  () => {
-    function runWithoutNode(command: string): {
-      status: number | null;
-      stdout: string;
-    } {
-      const bin = makeTempRoot("no-node-");
-      symlinkSync("/bin/sh", join(bin, "sh"));
-      const result = spawnSync(join(bin, "sh"), ["-c", command], {
-        env: { PATH: bin, CLAUDE_PLUGIN_ROOT: dirname(distDir) },
-        encoding: "utf8",
-      });
-      return { status: result.status, stdout: result.stdout };
-    }
-
-    it("makes the startup notice print the no-Node line and exit 0", () => {
-      const result = runWithoutNode(noticeCommand[0] ?? "");
-      expect(result).toEqual({ status: 0, stdout: `${NO_NODE_LINE}\n` });
-    });
-
-    it("makes a recording command print nothing and exit 0", () => {
-      const result = runWithoutNode(recordingCommand ?? "");
-      expect(result).toEqual({ status: 0, stdout: "" });
-    });
-  },
-);
 
 describe("the version gate on the built entries", () => {
   const entries = [
