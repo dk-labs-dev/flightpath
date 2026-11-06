@@ -1,0 +1,52 @@
+name: Bug report
+description: Something Flightpath did wrong, or failed to do.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it. Before you send this: **remove anything private** — real file
+        paths, prompt text, commands and URLs, and session content. Flightpath recordings stay on your machine;
+        never attach a recording or a log that contains them. Describe what happened instead.
+  - type: input
+    id: flightpath-version
+    attributes:
+      label: Flightpath version
+      description: The plugin version, from the marketplace or the release tag.
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: The output of `claude --version`.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Name and version, for example Windows 11, macOS 15, or Ubuntu 24.04.
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: The output of `node --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, in order, starting from launching Claude Code.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+    validations:
+      required: true

@@ -8,24 +8,7 @@ Flightpath is local-first: recordings live on your machine, file paths are recor
 
 ## Contributing
 
-Run the checks before asking for a review:
-
-```
-pnpm format:check && pnpm lint && pnpm typecheck && pnpm quality && pnpm test
-```
-
-`pnpm quality` is the structural gate. It runs six checks and prints one line per check:
-
-- **eslint** — no function over 60 lines, no nesting deeper than 3, no nested ternaries, no `any`, no non-null assertions in `src/`, and no `as unknown as`. An exception is written `// eslint-disable-next-line <rule> -- <reason>`; a disable without the reason fails. The rules have no per-file exceptions: a pre-existing violation is carried by a baseline disable on the violating line itself (see below).
-- **baseline count** — the tree holds exactly the number of `-- baseline` eslint disables that `scripts/baseline-count.json` records.
-- **knip** — no unused exports, files or dependencies.
-- **jscpd** — no duplicated block of 50 tokens or more across `src/`, `scripts/` and `test/`.
-- **comment ratio** — no file over 20% comment lines, unless it is listed in `scripts/comment-ratio-allowlist.json` with a reason.
-- **test length** — no `it` body over 80 lines; `describe` blocks are exempt.
-
-Violations that predate the gate are carried as baselines, and a baseline can only shrink: new code gets no entries, and the change that empties a list deletes it. ESLint's baselines are the `// eslint-disable-next-line <rule> -- baseline: <detail>; to be split` (or `to be removed`) comments on the violating lines — each names the rule and carries the measured detail. `scripts/baseline-count.json` records how many baseline disables exist, and the gate fails if the tree's count differs from it in either direction: more means a violation was baselined instead of fixed, and fewer means a cleanup worked, so lower the recorded number in the same change. The other baselines live in the tool configs: `ignoreIssues` in `knip.jsonc`, `.jscpd-baseline.json`, the `baseline` entries in the comment-ratio allow-list (an entry with `"baseline": false` is a file that stays comment-heavy by design, not a cleanup target) and `scripts/test-length-baseline.json`. To refresh the jscpd baseline after removing a duplication, run `pnpm exec jscpd --update-baseline`.
-
-To measure the daemon's memory while it ingests 100,000 events, build first, then run `pnpm measure-ingest` from `packages/flightpath`.
+How to build Flightpath, the checks every change must pass, and how pull requests work are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
