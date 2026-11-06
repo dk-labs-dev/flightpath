@@ -384,7 +384,7 @@ function roomLeft(
           value: toAutoCompact <= 0 ? 0 : Math.floor(toAutoCompact / growth),
           estimated: true,
         };
-  return { window, autoCompact, toLimit, toAutoCompact, turnsLeft };
+  return { model, window, autoCompact, toLimit, toAutoCompact, turnsLeft };
 }
 
 /** A step's sentence, as the describer words it — both

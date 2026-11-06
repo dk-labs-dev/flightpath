@@ -124,6 +124,7 @@ describe("timeLabelBox", () => {
 
 describe("chartMarks", () => {
   const room = (limit: number, autoCompact: number | null): Room => ({
+    model: "claude-sonnet-4-6",
     window: { tokens: limit, source: "model-list", reportedAt: null },
     autoCompact:
       autoCompact === null

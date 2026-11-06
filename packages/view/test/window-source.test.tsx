@@ -39,8 +39,9 @@ type Room = TokenHistory["room"];
 /** A room whose window is the one under test: the auto-compact
  * point stands as the harness's does, and the room to the
  * limit is measured from the harness's 95K peak. */
-function roomWith(window: ContextWindow): Room {
+function roomWith(window: ContextWindow, model: string | null): Room {
   return {
+    model,
     window,
     autoCompact:
       window.tokens === null
@@ -52,9 +53,14 @@ function roomWith(window: ContextWindow): Room {
   };
 }
 
-async function renderRoom(window: ContextWindow): Promise<void> {
+async function renderRoom(
+  window: ContextWindow,
+  model: string | null = null,
+): Promise<void> {
   setResponder(() =>
-    Promise.resolve(jsonResponse(200, history({ room: roomWith(window) }))),
+    Promise.resolve(
+      jsonResponse(200, history({ room: roomWith(window, model) })),
+    ),
   );
   await renderLens();
 }
@@ -106,14 +112,19 @@ describe("the room panel's source line", () => {
   });
 
   it("names the model an unknown window isn't known for, and hides the room bar and the limit", async () => {
-    await renderRoom({ tokens: null, source: "unknown", reportedAt: null });
+    // The session opened on a listed model; the line names the
+    // model the window was looked up for, not the first one.
     const summary = fixtureSnapshot().summary;
-    summary.model = "claude-new-model";
+    summary.model = "claude-sonnet-5-5";
     act(() => {
       useSessionStore.setState({ sessionSummary: summary });
     });
+    await renderRoom(
+      { tokens: null, source: "unknown", reportedAt: null },
+      "claude-example-1",
+    );
     await settle();
-    expect(sourceLine()).toContain("Window not known for claude-new-model");
+    expect(sourceLine()).toContain("Window not known for claude-example-1");
     expect(container.querySelector(".tokens-bar")).toBeNull();
     expect(container.textContent).not.toContain("tokens to the limit");
     expect(windowHint()).not.toBeNull();

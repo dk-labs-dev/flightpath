@@ -204,6 +204,7 @@ describe("a rebuild after a model switch", () => {
 
 describe("a rebuild after an effort change", () => {
   it.each([
+    "claude-opus-4-8",
     "claude-opus-4-6",
     "claude-sonnet-4-6",
     "claude-haiku-4-5",

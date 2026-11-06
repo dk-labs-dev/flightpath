@@ -5,11 +5,18 @@ import type {
 } from "../storage/index.js";
 import type { ContextWindow, ContextWindowSource } from "./payloads.js";
 
-// The windows on Claude's model list: "How large is the context window
-// on paid Claude plans", Claude help centre, read 30 Oct 2026.
+// The windows are from the Claude Code table in the help centre's "How
+// large is the context window on paid Claude plans", and the ids from the
+// platform docs' model ID pages, both read 6 Nov 2026.
 const MODEL_WINDOWS: ReadonlyMap<string, number> = new Map([
+  ["claude-fable-5-1", 1_000_000],
   ["claude-opus-5-5", 1_000_000],
   ["claude-sonnet-5-5", 1_000_000],
+  ["claude-haiku-5-5", 1_000_000],
+  ["claude-opus-5", 1_000_000],
+  ["claude-sonnet-5", 1_000_000],
+  ["claude-opus-4-8", 1_000_000],
+  ["claude-opus-4-7", 1_000_000],
   ["claude-opus-4-6", 200_000],
   ["claude-sonnet-4-6", 200_000],
   ["claude-haiku-4-5", 200_000],
