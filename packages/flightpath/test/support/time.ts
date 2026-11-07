@@ -16,5 +16,7 @@ export function medianOf(values: number[]): number {
 // Hosted macOS runners have no GPU, so a frame budget there measures the runner (ci.yml).
 export const frameBudgetHolds = process.env.FLIGHTPATH_NO_GPU !== "1";
 
-// Hosted runners pause processes now and then, so a timing bound there measures the runner.
+// Hosted runners pause processes now and then, so a bound there measures the runner (Linux aside).
 export const onHostedRunner = process.env.GITHUB_ACTIONS === "true";
+
+export const timingBoundsHold = !onHostedRunner || process.platform === "linux";

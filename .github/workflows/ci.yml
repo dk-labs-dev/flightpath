@@ -7,10 +7,11 @@ name: CI
 # private they run on Linux only, and they widen to all three
 # systems the day it turns public, with no edit here.
 # One exception: a pull request or a merge-queue group that changes
-# only documentation and images runs the static checks and the
-# hygiene checks and skips the build and the tests — there is no
-# code in it for them to run on. Pushes and manual runs never take
-# the shortcut.
+# only documentation (a Markdown file at the repository root, anything
+# under docs/, a package README, or the pull request template) runs
+# the static checks and the hygiene checks and skips the build and
+# the tests — there is no code in it for them to run on. Pushes and
+# manual runs never take the shortcut.
 on:
   pull_request:
   push:
@@ -54,8 +55,11 @@ jobs:
         run: node scripts/ci-matrix.mjs >> "$GITHUB_OUTPUT"
       # Only a pull request or a merge-queue group can be
       # documentation-only. Its files are the ones its base and head
-      # commits differ on; a file outside the documentation patterns
-      # makes the whole change a code change. No files at all counts
+      # commits differ on. Documentation is a Markdown file at the
+      # repository root, anything under docs/, a package README
+      # (packages/*/README.md) and .github/pull_request_template.md;
+      # every other file, the slash commands' Markdown included, makes
+      # the whole change a code change. No files at all counts
       # as a code change, so an odd event runs everything rather
       # than nothing.
       - id: changed
@@ -90,7 +94,9 @@ jobs:
           code=false
           while IFS= read -r file; do
             case "$file" in
-              *.md | docs/* | *.png | *.gif) ;;
+              docs/* | packages/[!/]*/README.md | .github/pull_request_template.md) ;;
+              */*) code=true ;;
+              *.md) ;;
               *) code=true ;;
             esac
           done <<< "$files"
@@ -299,16 +305,26 @@ jobs:
       - uses: ./.github/actions/playwright-browsers
         with:
           os: ${{ matrix.os }}
-      - env:
+      # Hosted Windows and macOS runners are shared and pause
+      # processes, so a missed bound there is logged above, not
+      # enforced; Linux enforces the bounds.
+      - id: budgets
+        continue-on-error: ${{ matrix.os != 'linux' }}
+        env:
           FLIGHTPATH_NO_GPU: ${{ matrix.os == 'macos' && '1' || '' }}
         run: pnpm --filter @flightpath/flightpath exec vitest run --project budgets
       # The hook gate borrows the main project's settings, so its
       # no-retry rule is restated on the command line.
-      - if: ${{ !cancelled() }}
+      - id: hook-gate
+        if: ${{ !cancelled() }}
+        continue-on-error: ${{ matrix.os != 'linux' }}
         working-directory: packages/flightpath
         env:
           FLIGHTPATH_TIMING_GATE: "1"
         run: pnpm exec vitest run test/hook-script.test.ts -t "runs fast against a live daemon" --retry=0
+      - if: ${{ matrix.os != 'linux' && (steps.budgets.outcome == 'failure' || steps.hook-gate.outcome == 'failure') }}
+        shell: bash
+        run: echo "A timing bound was missed on this hosted runner; it is logged above, not enforced." >> "$GITHUB_STEP_SUMMARY"
 
   # The built-in node:sqlite behaves differently across Node release
   # lines, so the files that use it, and the one that checks its
