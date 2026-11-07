@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      try {
+        var storedTheme = window.localStorage.getItem("flightpath-theme");
+        if (storedTheme === "light" || storedTheme === "dark") {
+          document.documentElement.dataset.theme = storedTheme;
+        }
+      } catch {
+        // Storage blocked: the choice is System.
+      }
+    </script>
+    <title>Flightpath</title>
+    <link rel="icon" type="image/svg+xml" href="/view/favicon.svg" />
+    <link rel="stylesheet" href="/view/view-DCPTBNMJ.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/view/view-C7CZ4UAN.js"></script>
+  </body>
+</html>
