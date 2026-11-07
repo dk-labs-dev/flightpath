@@ -253,6 +253,8 @@ When the cache is about to expire in a live session, a note appears in the summa
 
 Six commands. Each is answered on your own computer and never reaches Claude, so they cost no tokens.
 
+Claude Code prints a command's answer under the heading "UserPromptExpansion operation blocked by hook". That is expected, not an error: Flightpath answers the command itself and stops it there, which is what keeps it from reaching Claude.
+
 - `/flightpath:open`: open this session's view in your browser.
 - `/flightpath:status`: show whether this session is recording, paused, or off everywhere; the recorder's address; the data folder; any buffered events; the last start error and a next step, if there was one; how many days recordings are kept; the database size; what is capturing this session; and the tokens Flightpath's own commands used in it. While the recorder runs it also gives the link to Settings.
 - `/flightpath:stop`: pause recording for this session. A paused stretch is not filled in afterwards.
