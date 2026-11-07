@@ -1,6 +1,6 @@
 {
   "name": "flightpath",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session.",
   "author": { "name": "Naga Golla" },
   "homepage": "https://github.com/dk-labs-dev/flightpath",
