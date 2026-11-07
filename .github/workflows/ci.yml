@@ -359,3 +359,31 @@ jobs:
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
         uses: ./.github/actions/retry-summary
+
+  # A job skipped before its matrix expands reports under its
+  # unexpanded name, never as the individual jobs, so the ruleset
+  # requires this one job instead. It passes when every job passed
+  # or was skipped, and fails when any job failed or was cancelled.
+  ci-passed:
+    name: CI passed
+    needs:
+      - prepare
+      - static
+      - hygiene
+      - build
+      - test-main
+      - test-view
+      - test-timing
+      - node-lines
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key] | join(", ")' <<< "$NEEDS")
+          if [ -n "$failed" ]; then
+            echo "These jobs did not pass: $failed" >&2
+            exit 1
+          fi
