@@ -62,12 +62,13 @@ jobs:
 
       - name: Package the plugin zip and its checksums
         env:
-          ZIP: ${{ steps.plan.outputs.zip }}
+          # Not ZIP: zip reads that variable as its own options.
+          ZIP_NAME: ${{ steps.plan.outputs.zip }}
           CHANNEL: ${{ steps.plan.outputs.channel }}
         run: |
           node scripts/package-plugin.mjs "$RUNNER_TEMP/package" --channel "$CHANNEL"
-          (cd "$RUNNER_TEMP/package" && zip -r "$GITHUB_WORKSPACE/$ZIP" .)
-          sha256sum "$ZIP" > SHA256SUMS
+          (cd "$RUNNER_TEMP/package" && zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" .)
+          sha256sum "$ZIP_NAME" > SHA256SUMS
 
       # The channel branch's root is the packaged marketplace folder:
       # the same files as the zip, committed with plumbing commands
@@ -108,11 +109,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.plan.outputs.tag }}
-          ZIP: ${{ steps.plan.outputs.zip }}
+          ZIP_NAME: ${{ steps.plan.outputs.zip }}
           PRERELEASE: ${{ steps.plan.outputs.prerelease }}
         run: |
           args=(--draft --title "$TAG" --notes-file release-notes.md)
           if [ "$PRERELEASE" = "true" ]; then
             args+=(--prerelease)
           fi
-          gh release create "$TAG" --target "$GITHUB_SHA" "${args[@]}" "$ZIP" SHA256SUMS
+          gh release create "$TAG" --target "$GITHUB_SHA" "${args[@]}" "$ZIP_NAME" SHA256SUMS
