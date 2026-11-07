@@ -159,6 +159,7 @@ function fixtureRepo(withDist: boolean): string {
   const root = mkdtempSync(join(tmpdir(), "flightpath-release-"));
   const plugin = join(root, "packages", "flightpath");
   write(join(plugin, ".claude-plugin", "plugin.json"), "{}");
+  write(join(plugin, ".claude-plugin", "icon.png"), "");
   write(join(plugin, "hooks", "hooks.json"), "{}");
   write(join(plugin, "commands", "stop.md"), "");
   write(join(plugin, "scripts", "tool.mjs"), "");
@@ -191,6 +192,7 @@ describe("the plugin package", () => {
     const root = fixtureRepo(true);
     const target = join(root, "out");
     expect(copyPlugin(root, target)).toEqual([
+      ".claude-plugin/icon.png",
       ".claude-plugin/plugin.json",
       "LICENSE",
       "NOTICE",
@@ -199,7 +201,6 @@ describe("the plugin package", () => {
       "dist/hook.js",
       "hooks/hooks.json",
       "package.json",
-      "scripts/tool.mjs",
     ]);
     expect(existsSync(join(target, "dist", "hook.js"))).toBe(true);
     expect(existsSync(join(target, "LICENSE"))).toBe(true);
@@ -235,17 +236,18 @@ describe("the plugin package", () => {
     const pluginDir = join(dirname(fileURLToPath(import.meta.url)), "..");
     const files = pluginFiles(pluginDir);
     for (const expected of [
+      ".claude-plugin/icon.png",
       ".claude-plugin/plugin.json",
       "README.md",
       "hooks/hooks.json",
       "commands/stop.md",
-      "scripts/measure-ingest.mjs",
     ]) {
       expect(files).toContain(expected);
     }
     for (const file of files) {
       expect(file.startsWith("src/")).toBe(false);
       expect(file.startsWith("test/")).toBe(false);
+      expect(file.startsWith("scripts/")).toBe(false);
       expect(file.startsWith("node_modules/")).toBe(false);
     }
     for (const left of [
@@ -298,6 +300,7 @@ describe("the packaged release folder", () => {
     const target = join(root, "release-folder");
     expect(packageRelease(root, target, "next")).toEqual([
       ".claude-plugin/marketplace.json",
+      "flightpath/.claude-plugin/icon.png",
       "flightpath/.claude-plugin/plugin.json",
       "flightpath/LICENSE",
       "flightpath/NOTICE",
@@ -306,7 +309,6 @@ describe("the packaged release folder", () => {
       "flightpath/dist/hook.js",
       "flightpath/hooks/hooks.json",
       "flightpath/package.json",
-      "flightpath/scripts/tool.mjs",
     ]);
     const written = JSON.parse(
       readFileSync(join(target, ".claude-plugin", "marketplace.json"), "utf8"),

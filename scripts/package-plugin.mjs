@@ -28,7 +28,8 @@ import { fileURLToPath } from "node:url";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Top-level entries of packages/flightpath that stay behind: the
-// sources and tests, and the files only the build reads.
+// sources and tests, the files only the build reads, and the
+// development scripts, which only run from the repository.
 const LEFT_BEHIND = new Set([
   "src",
   "test",
@@ -38,6 +39,7 @@ const LEFT_BEHIND = new Set([
   "tsconfig.build.json",
   "vitest.config.ts",
   "build.mjs",
+  "scripts",
 ]);
 
 const CHANNELS = {
