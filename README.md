@@ -27,7 +27,7 @@ Recording starts with your next session. Type `/flightpath:open` to see it.
 
 Flightpath has been tested live on Windows and Linux. macOS runs the full test suite in CI.
 
-## What you get
+## What Flightpath does
 
 ### Steps: a live timeline
 
@@ -79,6 +79,8 @@ Commands are answered on your machine and never reach the model, so they cost no
 - [User guide](docs/guide.md): each view, the suggestions and the settings
 - [Privacy](docs/privacy.md)
 - [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md): how to report a vulnerability privately
+- [Report a bug or suggest a feature](https://github.com/dk-labs-dev/flightpath/issues/new/choose)
 
 ## License
 
