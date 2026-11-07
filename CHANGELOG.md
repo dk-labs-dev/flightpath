@@ -2,6 +2,13 @@
 
 What each release of Flightpath does, newest first.
 
+## 1.0.1
+
+- The plugin has an icon, the paper-plane mark, for the places
+  that list plugins.
+- The plugin folder no longer carries the development scripts;
+  they stay in the repository.
+
 ## 1.0.0
 
 - Records every Claude Code session live, on your own machine:
