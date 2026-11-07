@@ -8,7 +8,7 @@
       "name": "flightpath",
       "source": {
         "source": "git-subdir",
-        "url": "dk-labs-dev/flightpath",
+        "url": "https://github.com/dk-labs-dev/flightpath.git",
         "path": "flightpath",
         "ref": "release"
       },
