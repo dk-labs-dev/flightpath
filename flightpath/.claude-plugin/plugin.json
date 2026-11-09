@@ -1,9 +1,24 @@
 {
   "name": "flightpath",
-  "version": "1.0.1",
+  "displayName": "Flightpath",
+  "version": "1.0.2",
   "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session.",
-  "author": { "name": "Naga Golla" },
+  "author": { "name": "Naga Golla", "url": "https://github.com/dk-labs-dev" },
   "homepage": "https://github.com/dk-labs-dev/flightpath",
   "repository": "https://github.com/dk-labs-dev/flightpath",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "keywords": [
+    "claude-code",
+    "observability",
+    "context-window",
+    "tokens",
+    "session-replay",
+    "coaching",
+    "hooks",
+    "local-first",
+    "developer-tools"
+  ],
+  "documentationUrl": "https://github.com/dk-labs-dev/flightpath/blob/main/docs/guide.md",
+  "supportUrl": "https://github.com/dk-labs-dev/flightpath/issues",
+  "privacyPolicyUrl": "https://github.com/dk-labs-dev/flightpath/blob/main/docs/privacy.md"
 }
