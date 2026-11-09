@@ -1,18 +1,51 @@
 {
   "name": "flightpath",
+  "description": "Flightpath: live, local session maps and coaching for Claude Code.",
   "owner": {
-    "name": "dk-labs-dev"
+    "name": "dk-labs-dev",
+    "url": "https://github.com/dk-labs-dev"
   },
   "plugins": [
     {
       "name": "flightpath",
+      "displayName": "Flightpath",
       "source": {
         "source": "git-subdir",
         "url": "https://github.com/dk-labs-dev/flightpath.git",
         "path": "flightpath",
         "ref": "release"
       },
-      "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session."
+      "description": "Records every Claude Code session live, draws the journey as a map, and coaches the next session.",
+      "author": {
+        "name": "Naga Golla",
+        "url": "https://github.com/dk-labs-dev"
+      },
+      "homepage": "https://github.com/dk-labs-dev/flightpath",
+      "repository": "https://github.com/dk-labs-dev/flightpath",
+      "license": "Apache-2.0",
+      "category": "developer-tools",
+      "keywords": [
+        "claude-code",
+        "observability",
+        "context-window",
+        "tokens",
+        "session-replay",
+        "coaching",
+        "hooks",
+        "local-first",
+        "developer-tools"
+      ],
+      "tags": [
+        "claude-code",
+        "observability",
+        "context-window",
+        "tokens",
+        "session-replay",
+        "coaching",
+        "hooks",
+        "local-first",
+        "developer-tools"
+      ]
     }
   ]
 }

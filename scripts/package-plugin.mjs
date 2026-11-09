@@ -50,6 +50,24 @@ const CHANNELS = {
 const PLUGIN_DESCRIPTION =
   "Records every Claude Code session live, draws the journey as a map, and coaches the next session.";
 
+const MARKETPLACE_DESCRIPTION =
+  "Flightpath: live, local session maps and coaching for Claude Code.";
+
+const ORG_URL = "https://github.com/dk-labs-dev";
+const REPO_URL = `${ORG_URL}/flightpath`;
+
+const KEYWORDS = [
+  "claude-code",
+  "observability",
+  "context-window",
+  "tokens",
+  "session-replay",
+  "coaching",
+  "hooks",
+  "local-first",
+  "developer-tools",
+];
+
 // The package-relative paths the plugin folder holds, sorted. Walks
 // `pluginDir` as it stands: a tree that hasn't been built simply has
 // no `dist/` entries in its list.
@@ -125,8 +143,10 @@ export function copyPlugin(root, target) {
 }
 
 // The marketplace file a channel carries. Its one entry resolves to
-// the plugin folder beside it, and its owner is the one the
-// marketplace on `main` names.
+// the plugin folder beside it, and its owner and listing fields are
+// the ones the marketplace on `main` names. Before install, /plugin
+// shows only the entry's own fields, so they are all spelled out
+// here; `version` is left to plugin.json, which wins over the entry.
 export function channelMarketplace(channel) {
   const known = CHANNELS[channel];
   if (known === undefined) {
@@ -134,12 +154,21 @@ export function channelMarketplace(channel) {
   }
   return {
     name: known.marketplaceName,
-    owner: { name: "dk-labs-dev" },
+    description: MARKETPLACE_DESCRIPTION,
+    owner: { name: "dk-labs-dev", url: ORG_URL },
     plugins: [
       {
         name: "flightpath",
+        displayName: "Flightpath",
         source: "./flightpath",
         description: PLUGIN_DESCRIPTION,
+        author: { name: "Naga Golla", url: ORG_URL },
+        homepage: REPO_URL,
+        repository: REPO_URL,
+        license: "Apache-2.0",
+        category: "developer-tools",
+        keywords: KEYWORDS,
+        tags: KEYWORDS,
       },
     ],
   };

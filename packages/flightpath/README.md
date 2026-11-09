@@ -19,4 +19,4 @@ Recording starts with your next session. Type `/flightpath:open` to see it.
 
 ## Learn more
 
-The [user guide](https://github.com/dk-labs-dev/flightpath/blob/main/docs/guide.md) covers each view, the suggestions and the settings.
+The [user guide](https://github.com/dk-labs-dev/flightpath/blob/main/docs/guide.md) covers each view, the suggestions and the settings. What stays on your machine is on the [Privacy](https://github.com/dk-labs-dev/flightpath/blob/main/docs/privacy.md) page.

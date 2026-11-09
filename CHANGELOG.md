@@ -2,6 +2,12 @@
 
 What each release of Flightpath does, newest first.
 
+## 1.0.2
+
+- The plugin and its marketplace describe themselves more fully:
+  keywords, category, author, and links to the guide, support and
+  the privacy page, for the places that list plugins.
+
 ## 1.0.1
 
 - The plugin has an icon, the paper-plane mark, for the places

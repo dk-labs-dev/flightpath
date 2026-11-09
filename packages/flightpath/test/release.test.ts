@@ -38,8 +38,15 @@ type ReleasePlan = {
 
 type Marketplace = {
   name: string;
-  owner: { name: string };
-  plugins: { name: string; source: string }[];
+  description: string;
+  owner: { name: string; url: string };
+  plugins: {
+    name: string;
+    source: unknown;
+    description: string;
+    keywords: string[];
+    homepage: string;
+  }[];
 };
 
 const { planForTag }: { planForTag: (tag: string) => ReleasePlan } =
@@ -262,6 +269,13 @@ describe("the plugin package", () => {
   });
 });
 
+function shippedMarketplace(): Marketplace {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  return JSON.parse(
+    readFileSync(join(root, ".claude-plugin", "marketplace.json"), "utf8"),
+  ) as Marketplace;
+}
+
 describe("channel marketplaces", () => {
   it("names the stable channel's marketplace after the plugin", () => {
     const marketplace = channelMarketplace("release");
@@ -276,17 +290,27 @@ describe("channel marketplaces", () => {
   });
 
   it("names the same owner as the marketplace this repository ships", () => {
-    const root = join(
-      dirname(fileURLToPath(import.meta.url)),
-      "..",
-      "..",
-      "..",
-    );
-    const shipped = JSON.parse(
-      readFileSync(join(root, ".claude-plugin", "marketplace.json"), "utf8"),
-    ) as Marketplace;
+    const shipped = shippedMarketplace();
     expect(channelMarketplace("release").owner).toEqual(shipped.owner);
     expect(channelMarketplace("next").owner).toEqual(shipped.owner);
+  });
+
+  it("lists the same entry fields as the marketplace this repository ships", () => {
+    const shipped = shippedMarketplace();
+    const channel = channelMarketplace("release");
+    expect(channel.description).toBe(shipped.description);
+    const { source: channelSource, ...channelEntry } = channel.plugins[0]!;
+    const { source: shippedSource, ...shippedEntry } = shipped.plugins[0]!;
+    expect(channelSource).toBe("./flightpath");
+    expect(shippedSource).toMatchObject({ source: "git-subdir" });
+    expect(channelEntry).toEqual(shippedEntry);
+  });
+
+  it("gives the entry a description, keywords and a homepage", () => {
+    const entry = channelMarketplace("release").plugins[0]!;
+    expect(entry.description).not.toBe("");
+    expect(entry.keywords).toContain("claude-code");
+    expect(entry.homepage).toBe("https://github.com/dk-labs-dev/flightpath");
   });
 
   it("refuses a channel it does not know", () => {
@@ -390,5 +414,11 @@ describe("the packaged plugin, run as shipped", () => {
     expect(version.stderr).toBe("");
     expect(version.status).toBe(0);
     expect(version.stdout).toBe(source.version);
+
+    const manifest = JSON.parse(
+      readFileSync(join(plugin, ".claude-plugin", "plugin.json"), "utf8"),
+    ) as { version: string; privacyPolicyUrl: string };
+    expect(manifest.version).toBe(source.version);
+    expect(manifest.privacyPolicyUrl).toMatch(/^https:\/\/.+\/privacy\.md$/);
   }, 60_000);
 });
