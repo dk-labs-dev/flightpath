@@ -1686,6 +1686,7 @@ function createTranscriptFollower(storage, options) {
   const ctx = {
     storage,
     options,
+    now: options.now ?? Date.now,
     sessions: /* @__PURE__ */ new Map(),
     offsetsPath: join6(options.dataDir, "transcript-offsets.json"),
     persistedOffsets: null,
@@ -2526,7 +2527,7 @@ async function importOneFile(ctx, sessionId, path, projectPath, settings, instal
   }
   if (mtime < installedAt) return;
   const lastEntryAt = readLastEntryAt(path);
-  if (lastEntryAt !== null && lastEntryAt < Date.now() - settings.retentionDays * DAY_MS) {
+  if (lastEntryAt !== null && lastEntryAt < ctx.now() - settings.retentionDays * DAY_MS) {
     return;
   }
   ctx.storage.ensureImportedSession(sessionId, projectPath, Math.floor(mtime));
@@ -2580,7 +2581,7 @@ async function importProjectFolder(ctx, projectsRoot, folder, projectPath, setti
 async function importAll(ctx) {
   const total = { importedSessions: 0, entries: 0, requests: 0 };
   const settings = ctx.options.settings();
-  const installedAt = readInstalledAt(ctx.options.dataDir, Date.now());
+  const installedAt = readInstalledAt(ctx.options.dataDir, ctx.now());
   const recorded = /* @__PURE__ */ new Map();
   for (const projectPath of ctx.storage.recordedProjectPaths()) {
     recorded.set(encodeProjectPath(projectPath), projectPath);
@@ -6903,6 +6904,7 @@ function describeRequest(request, ctx = {}) {
 
 // src/api/context-limit.ts
 var MODEL_WINDOWS = /* @__PURE__ */ new Map([
+  ["claude-fable-5-2", 1e6],
   ["claude-fable-5-1", 1e6],
   ["claude-opus-5-5", 1e6],
   ["claude-sonnet-5-5", 1e6],
@@ -10147,7 +10149,7 @@ function instructionFindings(data) {
 
 // src/api/finding-rebuilds.ts
 var UNCACHED_BREAK = 1e5;
-var EFFORT_SENSITIVE_MODEL = /^(?:claude-opus-5|claude-sonnet-5|claude-opus-4-8|claude-opus-4-7|claude-opus-4-6|claude-sonnet-4-6|claude-haiku-4-5)(?:-\d{8})?$/;
+var EFFORT_SENSITIVE_MODEL = /^(?:claude-fable-5-2|claude-opus-5|claude-sonnet-5|claude-opus-4-8|claude-opus-4-7|claude-opus-4-6|claude-sonnet-4-6|claude-haiku-4-5)(?:-\d{8})?$/;
 function isReportable(previous, current, cause) {
   const written = cacheWriteTokens(current) ?? 0;
   if (isRebuildWithCause(previous, current, cause) && written >= WRITE_FLOOR) {

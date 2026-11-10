@@ -90,6 +90,7 @@ export function createTranscriptFollower(storage, options) {
     const ctx = {
         storage,
         options,
+        now: options.now ?? Date.now,
         sessions: new Map(),
         offsetsPath: join(options.dataDir, "transcript-offsets.json"),
         persistedOffsets: null,
@@ -1181,7 +1182,7 @@ async function importOneFile(ctx, sessionId, path, projectPath, settings, instal
     // landed; it is not imported at all (ADR-0025).
     const lastEntryAt = readLastEntryAt(path);
     if (lastEntryAt !== null &&
-        lastEntryAt < Date.now() - settings.retentionDays * DAY_MS) {
+        lastEntryAt < ctx.now() - settings.retentionDays * DAY_MS) {
         return;
     }
     ctx.storage.ensureImportedSession(sessionId, projectPath, Math.floor(mtime));
@@ -1221,7 +1222,7 @@ async function importProjectFolder(ctx, projectsRoot, folder, projectPath, setti
 async function importAll(ctx) {
     const total = { importedSessions: 0, entries: 0, requests: 0 };
     const settings = ctx.options.settings();
-    const installedAt = readInstalledAt(ctx.options.dataDir, Date.now());
+    const installedAt = readInstalledAt(ctx.options.dataDir, ctx.now());
     const recorded = new Map();
     for (const projectPath of ctx.storage.recordedProjectPaths()) {
         recorded.set(encodeProjectPath(projectPath), projectPath);
