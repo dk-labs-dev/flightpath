@@ -31,6 +31,7 @@ import { allStoredText, queryRows } from "./support/storage.js";
 import { iso } from "./support/time.js";
 import {
   IMPORT_INSTALL,
+  IMPORT_NOW,
   followLines,
   importTranscriptLines,
   makeTranscriptWorld,
@@ -1750,8 +1751,8 @@ describe("import", () => {
       world,
       "/home/user/proj-a",
       "sess-fresh",
-      transcriptFor("sess-fresh", Date.now() - 120_000),
-      Date.now(),
+      transcriptFor("sess-fresh", IMPORT_NOW - 120_000),
+      IMPORT_NOW,
     );
     const result = await world.follower.importAll();
     expect(result.importedSessions).toBe(1);
@@ -1942,8 +1943,8 @@ describe("import", () => {
       world,
       "/home/user/proj-a",
       "sess-purged",
-      transcriptFor("sess-purged", Date.now() - 120_000),
-      Date.now(),
+      transcriptFor("sess-purged", IMPORT_NOW - 120_000),
+      IMPORT_NOW,
     );
     await expectOnlyFreshImports(world, "sess-purged");
   });
@@ -1956,10 +1957,39 @@ describe("import", () => {
       world,
       "/home/user/proj-a",
       "sess-aged",
-      transcriptFor("sess-aged", Date.now() - 30 * 24 * 60 * 60 * 1000),
-      Date.now(),
+      transcriptFor("sess-aged", IMPORT_NOW - 30 * 24 * 60 * 60 * 1000),
+      IMPORT_NOW,
     );
     await expectOnlyFreshImports(world, "sess-aged");
+  });
+
+  it("measures the retention window from the clock it is given", async () => {
+    const world = seedImportWorld();
+    // The window is 15 days back from the injected moment, not
+    // from the real one: a last entry a second inside it is
+    // imported, one a second outside is not.
+    const cutoff = IMPORT_NOW - 15 * 24 * 60 * 60 * 1000;
+    placeTranscript(
+      world,
+      "/home/user/proj-a",
+      "sess-inside",
+      transcriptFor("sess-inside", cutoff - 1000),
+      IMPORT_NOW,
+    );
+    placeTranscript(
+      world,
+      "/home/user/proj-a",
+      "sess-outside",
+      transcriptFor("sess-outside", cutoff - 3000),
+      IMPORT_NOW,
+    );
+    const result = await world.follower.importAll();
+    expect(result.importedSessions).toBe(1);
+    expect(
+      queryRows(world.storage.dbPath, "SELECT id FROM sessions ORDER BY id")
+        .map((row) => row.id)
+        .filter((id) => id !== "sess-known"),
+    ).toEqual(["sess-inside"]);
   });
 
   it("opens import turns only for entries that are prompts", async () => {

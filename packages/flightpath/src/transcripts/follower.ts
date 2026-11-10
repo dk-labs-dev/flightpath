@@ -255,11 +255,17 @@ interface FollowerOptions {
   dataDir: string;
   configDir: string;
   settings: () => Settings;
+  /**
+   * An injected clock, for tests: the import measures the
+   * retention window and the install bound against it.
+   */
+  now?: () => number;
 }
 
 interface FollowerContext {
   storage: Storage;
   options: FollowerOptions;
+  now: () => number;
   sessions: Map<string, SessionState>;
   offsetsPath: string;
   persistedOffsets: Map<string, number> | null;
@@ -274,6 +280,7 @@ export function createTranscriptFollower(
   const ctx: FollowerContext = {
     storage,
     options,
+    now: options.now ?? Date.now,
     sessions: new Map(),
     offsetsPath: join(options.dataDir, "transcript-offsets.json"),
     persistedOffsets: null,
@@ -1634,7 +1641,7 @@ async function importOneFile(
   const lastEntryAt = readLastEntryAt(path);
   if (
     lastEntryAt !== null &&
-    lastEntryAt < Date.now() - settings.retentionDays * DAY_MS
+    lastEntryAt < ctx.now() - settings.retentionDays * DAY_MS
   ) {
     return;
   }
@@ -1704,7 +1711,7 @@ async function importProjectFolder(
 async function importAll(ctx: FollowerContext): Promise<ImportResult> {
   const total: ImportResult = { importedSessions: 0, entries: 0, requests: 0 };
   const settings = ctx.options.settings();
-  const installedAt = readInstalledAt(ctx.options.dataDir, Date.now());
+  const installedAt = readInstalledAt(ctx.options.dataDir, ctx.now());
   const recorded = new Map<string, string>();
   for (const projectPath of ctx.storage.recordedProjectPaths()) {
     recorded.set(encodeProjectPath(projectPath), projectPath);
