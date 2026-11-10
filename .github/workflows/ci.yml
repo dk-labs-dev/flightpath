@@ -204,9 +204,11 @@ jobs:
 
   # The main project, split across parallel jobs per system with
   # Vitest's sharding: three shards on Linux and Windows, two on
-  # macOS. The workers setting stays as it was — three on Linux,
-  # the default elsewhere, because three overload a two-vCPU
-  # Windows runner.
+  # macOS. Workers are set per system: three on Linux, two on
+  # Windows and the default on macOS. Three overload a hosted
+  # Windows runner: a worker that stops answering under that load
+  # ends the job red with every test passed, so Windows keeps one
+  # worker's worth of headroom.
   test-main:
     name: main (${{ matrix.os }}, shard ${{ matrix.shard }}/${{ matrix.total }})
     needs: [prepare, build]
@@ -218,6 +220,7 @@ jobs:
         include: ${{ fromJSON(needs.prepare.outputs.main-matrix) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/windows-scan-exclusions
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -235,7 +238,7 @@ jobs:
           os: ${{ matrix.os }}
       - env:
           FLIGHTPATH_RETRIED_TESTS_FILE: ${{ runner.temp }}/retried-tests.txt
-        run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || matrix.os == 'windows' && ' --maxWorkers=2' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
         uses: ./.github/actions/retry-summary
@@ -253,6 +256,7 @@ jobs:
         os: ${{ fromJSON(needs.prepare.outputs.systems) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/windows-scan-exclusions
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -290,6 +294,7 @@ jobs:
         os: ${{ fromJSON(needs.prepare.outputs.systems) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/windows-scan-exclusions
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
