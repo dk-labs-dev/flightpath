@@ -2,6 +2,12 @@
 
 What each release of Flightpath does, newest first.
 
+## 1.0.3
+
+- Claude Fable 5.2 is known: Room left shows its 1M window
+  without running /context, and the effort suggestion covers it,
+  since changing effort on Fable 5.2 starts the cache over.
+
 ## 1.0.2
 
 - The plugin and its marketplace describe themselves more fully:

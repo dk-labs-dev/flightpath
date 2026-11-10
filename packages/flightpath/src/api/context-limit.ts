@@ -7,8 +7,11 @@ import type { ContextWindow, ContextWindowSource } from "./payloads.js";
 
 // The windows are from the Claude Code table in the help centre's "How
 // large is the context window on paid Claude plans", and the ids from the
-// platform docs' model ID pages, both read 6 Nov 2026.
+// platform docs' model ID pages, both read 6 Nov 2026. Claude Fable 5.2
+// is from the Claude platform's models overview, read 9 Nov 2026, which
+// gives it a "1M tokens" window; the help centre table did not list it.
 const MODEL_WINDOWS: ReadonlyMap<string, number> = new Map([
+  ["claude-fable-5-2", 1_000_000],
   ["claude-fable-5-1", 1_000_000],
   ["claude-opus-5-5", 1_000_000],
   ["claude-sonnet-5-5", 1_000_000],
