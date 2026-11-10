@@ -12,6 +12,16 @@ import {
 import { makeTempRoot, registerCleanup } from "./cleanup.js";
 import { recordHookEvent } from "./events.js";
 
+/** The install moment the import tests pin, as the follower reads it. */
+export const IMPORT_INSTALL = Date.parse("2026-10-24T09:00:00.000Z");
+
+/**
+ * The import's clock in the tests: a day after the install, so
+ * the fixtures sit inside the retention window whatever the
+ * date of the run.
+ */
+export const IMPORT_NOW = IMPORT_INSTALL + 24 * 3_600_000;
+
 export interface TelemetryWorld {
   root: string;
   dataDir: string;
@@ -50,6 +60,7 @@ export function makeTranscriptWorld(
     dataDir,
     configDir,
     settings: () => current,
+    now: () => IMPORT_NOW,
   });
   return { root, dataDir, configDir, storage, follower };
 }
@@ -77,6 +88,7 @@ export function makeTranscriptWorldFailingOnce(
     dataDir: world.dataDir,
     configDir: world.configDir,
     settings: () => defaultSettings(),
+    now: () => IMPORT_NOW,
   });
   return { ...world, follower };
 }
@@ -90,9 +102,6 @@ export async function followLines(
   writeFileSync(path, lines.join("\n") + "\n");
   await world.follower.follow("sess-live", path);
 }
-
-/** The install moment the import tests pin, as the follower reads it. */
-export const IMPORT_INSTALL = Date.parse("2026-10-24T09:00:00.000Z");
 
 /**
  * A transcript world with an install stamp and one recorded

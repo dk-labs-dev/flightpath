@@ -48,6 +48,13 @@ import { openStorage, type Storage } from "../src/storage/index.js";
 
 const T0 = Date.parse("2026-10-24T10:00:00.000Z");
 
+// Where the start-time import's transcript begins: half a day
+// before this run, so its 10,000 pairs end hours before now. The
+// spawned daemon skips transcripts older than its retention
+// window by the real clock, which it can't be given, so fixed
+// dates would age out of the import as the calendar moves.
+const RUN_START = Date.now() - 12 * 3_600_000;
+
 const USAGE = {
   input_tokens: 1000,
   output_tokens: 200,
@@ -77,11 +84,13 @@ function rssMb(pid: number): number | null {
  * Write a transcript of `pairs` prompt/request pairs for one
  * session, from the two entry templates below, in blocks.
  * Each pair is about 2 KB, so 100,000 pairs is about 200 MB.
+ * The pairs start at `startAt`.
  */
 function generateTranscript(
   path: string,
   sessionId: string,
   pairs: number,
+  startAt: number = T0,
 ): void {
   const pad = "x".repeat(1700);
   const blockPairs = 1000;
@@ -91,7 +100,7 @@ function generateTranscript(
     const lines: string[] = [];
     for (let i = 0; i < inBlock; i += 1) {
       const n = written + i;
-      const at = T0 + n * 2000;
+      const at = startAt + n * 2000;
       lines.push(
         transcriptUserLine(at, {
           sessionId,
@@ -594,12 +603,12 @@ describe("long sessions", () => {
     child.kill("SIGTERM");
     await waitForChildExit(child);
 
-    // A transcript-only session appears in that project,
-    // modified after Flightpath was installed.
+    // A transcript-only session in that project, dated from this run.
     generateTranscript(
       join(projectDir, "imported-1.jsonl"),
       "imported-1",
       10_000,
+      RUN_START,
     );
 
     // Then the daemon starts with the import pending; the
