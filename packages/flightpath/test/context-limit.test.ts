@@ -49,6 +49,8 @@ describe("contextWindowFor", () => {
       "claude-haiku-5-5",
       "claude-haiku-5-5-20261007",
       "claude-fable-5-1",
+      "claude-fable-5-2",
+      "claude-fable-5-2-20261109",
       "claude-opus-5",
       "claude-sonnet-5",
       "claude-opus-4-8",
