@@ -18,7 +18,7 @@ const systems =
     ? ["linux"]
     : ["linux", "windows", "macos"];
 
-const shardsPerSystem = { linux: 3, windows: 3, macos: 2 };
+const shardsPerSystem = { linux: 3, windows: 5, macos: 2 };
 const mainMatrix = [];
 for (const os of systems) {
   for (let shard = 1; shard <= shardsPerSystem[os]; shard += 1) {

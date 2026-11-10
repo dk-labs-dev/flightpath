@@ -203,12 +203,13 @@ jobs:
           retention-days: 1
 
   # The main project, split across parallel jobs per system with
-  # Vitest's sharding: three shards on Linux and Windows, two on
-  # macOS. Workers are set per system: three on Linux, two on
-  # Windows and the default on macOS. Three overload a hosted
-  # Windows runner: a worker that stops answering under that load
-  # ends the job red with every test passed, so Windows keeps one
-  # worker's worth of headroom.
+  # Vitest's sharding: three shards on Linux, five on Windows and
+  # two on macOS. Workers are set per system: three on Linux, one on
+  # Windows and the default on macOS. On a loaded hosted Windows
+  # runner a worker's progress calls to the main Vitest process
+  # time out, which ends the job red with every test passed. One
+  # worker keeps the runner unloaded, and the extra shards make up
+  # the parallel work it gives up.
   test-main:
     name: main (${{ matrix.os }}, shard ${{ matrix.shard }}/${{ matrix.total }})
     needs: [prepare, build]
@@ -238,7 +239,7 @@ jobs:
           os: ${{ matrix.os }}
       - env:
           FLIGHTPATH_RETRIED_TESTS_FILE: ${{ runner.temp }}/retried-tests.txt
-        run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || matrix.os == 'windows' && ' --maxWorkers=2' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
+        run: pnpm --filter @flightpath/flightpath exec vitest run --project main --shard=${{ matrix.shard }}/${{ matrix.total }}${{ matrix.os == 'linux' && ' --maxWorkers=3' || matrix.os == 'windows' && ' --maxWorkers=1' || '' }} --reporter=default --reporter=../../scripts/retried-tests-reporter.mjs
       - name: Name the tests that passed only on retry
         if: ${{ !cancelled() }}
         uses: ./.github/actions/retry-summary
