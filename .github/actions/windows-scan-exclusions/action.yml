@@ -1,0 +1,25 @@
+name: Windows scan exclusions
+description: >-
+  On a Windows runner, excludes the workspace and the temp folders
+  from Microsoft Defender's real-time scan, so the test jobs'
+  many small file writes are not each scanned. Does nothing on
+  other systems, and never fails the job.
+runs:
+  using: composite
+  steps:
+    # The SQLite tests create and upgrade many small files under
+    # the temp folder. On the hosted Windows runners they ran
+    # several times slower than on Linux, the pattern real-time
+    # scanning of each new file gives. This only changes how the
+    # CI runner treats its own disk; nothing that ships is
+    # affected.
+    # If the cmdlet is missing or refused, the step says so and
+    # the job carries on at the slower speed.
+    - if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      continue-on-error: true
+      run: |
+        $paths = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP, $env:TEMP) |
+          Where-Object { $_ } | Select-Object -Unique
+        Add-MpPreference -ExclusionPath $paths -ErrorAction Stop
+        Write-Host "Excluded from real-time scanning: $($paths -join ', ')"
