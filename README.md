@@ -82,6 +82,8 @@ Commands are answered on your machine and never reach the model, so they cost no
 - [Security policy](SECURITY.md): how to report a vulnerability privately
 - [Report a bug or suggest a feature](https://github.com/dk-labs-dev/flightpath/issues/new/choose)
 
+If Flightpath helps you, a star on GitHub helps other Claude Code users find it.
+
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
