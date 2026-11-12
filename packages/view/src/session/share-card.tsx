@@ -15,6 +15,7 @@ import { useSessionStore } from "./store.js";
 
 const COPY_UNAVAILABLE =
   "Copy isn't available in this browser. Use Save image.";
+const COPIED = "Copied.";
 
 /** The open session's card numbers, from the store and the
  * session's own queries: the context at the latest step —
@@ -46,6 +47,8 @@ export function useShareCardNumbers(): CardNumbers {
 export function ShareDialog({ onClose }: { onClose: () => void }) {
   const numbers = useShareCardNumbers();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // The note lives and dies with the dialog: closing
+  // unmounts it, so a reopened preview starts clear.
   const [copyNote, setCopyNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,7 +68,9 @@ export function ShareDialog({ onClose }: { onClose: () => void }) {
       link.href = url;
       link.download = "flightpath-session.png";
       link.click();
-      URL.revokeObjectURL(url);
+      // Revoked on a later task: some browsers start the
+      // download after the click returns and would lose it.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     });
   };
 
@@ -83,7 +88,7 @@ export function ShareDialog({ onClose }: { onClose: () => void }) {
       void navigator.clipboard
         .write([new ClipboardItem({ "image/png": blob })])
         .then(
-          () => setCopyNote(null),
+          () => setCopyNote(COPIED),
           () => setCopyNote(COPY_UNAVAILABLE),
         );
     });

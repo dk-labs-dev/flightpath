@@ -21,7 +21,8 @@ import {
 // browser: the button stands in the app bar on a session
 // and nowhere else, at phone width it is the icon alone
 // under the same name, and the dialog saves a PNG of the
-// card's own size. The session is seeded with the README
+// card's own size and says so when a copy lands. The
+// session is seeded with the README
 // sample's shape: prompts of 41 tokens, a context of
 // 59,375, and one file read that added 20,573 in a step.
 
@@ -251,6 +252,30 @@ describe("the share preview", () => {
     await closeAction(dialog).click();
     await expectClosedBackAtButton(page);
     await page.close();
+  }, 90_000);
+
+  it("says Copied. once the copy lands, with clipboard access granted", async () => {
+    const started = suite();
+    const context = await started.browser.newContext({
+      viewport: { width: 1440, height: 900 },
+    });
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+      origin: new URL(started.base).origin,
+    });
+    const page = await context.newPage();
+    await openSession(page);
+    await shareButton(page).click();
+    const dialog = page.getByRole("dialog", { name: SHARE_NAME });
+    await dialog.waitFor();
+    await dialog.getByRole("button", { name: "Copy" }).click();
+    // The note is the only sign the copy happened: it
+    // stands in the status line under the card.
+    await expect
+      .poll(() => dialog.getByRole("status").textContent(), {
+        timeout: 15_000,
+      })
+      .toBe("Copied.");
+    await context.close();
   }, 90_000);
 
   it("closes on Escape and returns focus to the button", async () => {
