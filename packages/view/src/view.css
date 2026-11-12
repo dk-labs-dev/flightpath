@@ -3029,6 +3029,17 @@ button.tokens-lane:hover {
 }
 
 @media (max-width: 759px) {
+  /* The bar's pieces crowd at this width: the gaps tighten
+     and the divider gives its room to the title, as the
+     brand's word and the crumb's link already do. */
+  .appbar {
+    gap: 10px 12px;
+  }
+
+  .appbar-divider {
+    display: none;
+  }
+
   .share-button-label {
     display: none;
   }
