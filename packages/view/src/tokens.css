@@ -22,6 +22,15 @@
   --on-accent-pill: #fff;
   --on-accent-pill-ink: #8f231d;
   --on-accent-line: rgba(255, 255, 255, 0.3);
+
+  /* The share card's own colours: the card is the same in
+     both themes, a printed thing rather than a screen, so
+     these four stand outside the light-dark pairs. The
+     canvas reads them from here like everything else. */
+  --share-bg: #1f6f8b;
+  --share-ink: #ffffff;
+  --share-pale: #d6eaf1;
+  --share-line: rgba(255, 255, 255, 0.35);
   --human: light-dark(#2563eb, #93c5fd);
   --human-bg: light-dark(#eaf1ff, #172036);
   --success: light-dark(#4d7c0f, #a3e635);

@@ -10,6 +10,7 @@ import { useSessions } from "../sessions/api";
 import { useShellStream } from "../shell-stream";
 import { projectName } from "../sessions/model";
 import { SessionScreen } from "../session/screen";
+import { ShareDialog } from "../session/share-card.js";
 import { useSessionStore } from "../session/store";
 import { AppBar } from "./AppBar";
 import { ConnectionBanner } from "./ConnectionBanner";
@@ -109,6 +110,36 @@ function useSessionTitle(current: Route): string | null {
   );
 }
 
+/** The app bar, and the share preview its Share button
+ * opens: the button is passed only on a session route, so
+ * the preview belongs to the bar that carries the button. */
+function ShellBar({
+  collapsed,
+  onToggleNav,
+  sessionTitle,
+  shareable,
+}: {
+  collapsed: boolean;
+  onToggleNav: () => void;
+  sessionTitle: string | null;
+  shareable: boolean;
+}) {
+  const [shareOpen, setShareOpen] = useState(false);
+  return (
+    <>
+      <AppBar
+        collapsed={collapsed}
+        onToggleNav={onToggleNav}
+        sessionTitle={sessionTitle}
+        onShare={shareable ? () => setShareOpen(true) : undefined}
+      />
+      {shareOpen && shareable && (
+        <ShareDialog onClose={() => setShareOpen(false)} />
+      )}
+    </>
+  );
+}
+
 type ShellProps = { payload: SettingsPayload | null; token: string };
 
 export function Shell({ payload, token }: ShellProps) {
@@ -136,10 +167,11 @@ export function Shell({ payload, token }: ShellProps) {
 
   return (
     <div className="shell">
-      <AppBar
+      <ShellBar
         collapsed={collapsed}
         onToggleNav={toggleNav}
         sessionTitle={sessionTitle}
+        shareable={current.screen === "session"}
       />
       <FirstRunHint
         visible={current.screen === "session" && !hintDismissed}

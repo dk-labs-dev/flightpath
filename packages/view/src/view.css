@@ -1369,6 +1369,20 @@ body {
   cursor: default;
 }
 
+/* The share preview, inside the confirmation dialog's
+   body: the card at the dialog's width, its corners
+   rounded as the card's own corners read on paper. */
+.confirm-dialog:has(.share-preview) {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.share-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
 /* The port warning's bullets, inside the confirmation
    dialog's body. */
 .port-warning-list {
@@ -2997,7 +3011,32 @@ button.tokens-lane:hover {
   text-decoration: none;
 }
 
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--on-accent-line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--on-accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 @media (max-width: 759px) {
+  .share-button-label {
+    display: none;
+  }
+
+  .share-button {
+    padding: 0 8px;
+  }
+
   .panel-resizer {
     display: none;
   }
