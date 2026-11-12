@@ -35,24 +35,25 @@ export function MenuIcon() {
   );
 }
 
-/** The paper plane's paths, drawn once for every place the
- * plane appears — the app's mark, a running step's tile, the
- * curve's live tip. Colour comes from the stylesheet, by the
- * context the plane sits in: classes here, palette there. */
+/** The paper plane's path data, drawn once for every place
+ * the plane appears — the app's mark, a running step's tile,
+ * the curve's live tip, the share card's canvas. Colour
+ * comes from the context the plane sits in: classes in the
+ * stylesheet, the palette on the canvas. */
+export const PLANE_BODY_PATH =
+  "M21.5 3 2.5 10.2l7.3 2.7L21.5 3l-8.9 11.6 2.7 7.4L21.5 3z";
+export const PLANE_LINE_PATH = "M9.8 12.9 12.6 14.6";
+
 function PlanePaths() {
   return (
     <>
       <path
-        d="M21.5 3 2.5 10.2l7.3 2.7L21.5 3l-8.9 11.6 2.7 7.4L21.5 3z"
+        d={PLANE_BODY_PATH}
         className="plane-body"
         strokeWidth="1.7"
         strokeLinejoin="round"
       ></path>
-      <path
-        d="M9.8 12.9 12.6 14.6"
-        className="plane-line"
-        strokeWidth="1.7"
-      ></path>
+      <path d={PLANE_LINE_PATH} className="plane-line" strokeWidth="1.7"></path>
     </>
   );
 }
@@ -136,6 +137,29 @@ export function ChevronIcon({ open, size }: { open: boolean; size: number }) {
       style={{ transform: open ? "rotate(90deg)" : undefined }}
     >
       <path d="M 9 5l7 7-7 7"></path>
+    </svg>
+  );
+}
+
+/** The share glyph: three points joined, as the button
+ * that makes the share card carries it. */
+export function ShareIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="5" r="3"></circle>
+      <circle cx="6" cy="12" r="3"></circle>
+      <circle cx="18" cy="19" r="3"></circle>
+      <path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"></path>
     </svg>
   );
 }

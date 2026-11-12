@@ -12,7 +12,9 @@ import { describe, expect, it } from "vitest";
 // accent can be as dark as the page. A suggestion's grade has one
 // per grade, so its colour can move without moving the warning
 // colour it starts from, and the suggestion card's filled button
-// has its own fill and text.
+// has its own fill and text. The share card's four are the same in
+// both themes: the card is an image, drawn once, not a surface the
+// theme restyles.
 const ADDED: Record<string, { light: string; dark: string }> = {
   "--switch-on": { light: "#111111", dark: "#a3e635" },
   "--grade-fix": { light: "#8a4e00", dark: "#f0b25c" },
@@ -20,6 +22,13 @@ const ADDED: Record<string, { light: string; dark: string }> = {
   "--grade-know": { light: "#525252", dark: "#a3a3a3" },
   "--primary-button": { light: "#111111", dark: "#a3e635" },
   "--on-primary-button": { light: "#ffffff", dark: "#000000" },
+  "--share-bg": { light: "#1f6f8b", dark: "#1f6f8b" },
+  "--share-ink": { light: "#ffffff", dark: "#ffffff" },
+  "--share-pale": { light: "#d6eaf1", dark: "#d6eaf1" },
+  "--share-line": {
+    light: "rgba(255, 255, 255, 0.35)",
+    dark: "rgba(255, 255, 255, 0.35)",
+  },
 };
 
 type Tokens = Map<string, string>;

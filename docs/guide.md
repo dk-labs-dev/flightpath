@@ -249,6 +249,10 @@ Every cache rebuild on the Tokens chart names its cause when Flightpath can tell
 
 When the cache is about to expire in a live session, a note appears in the summary: "Cache warm for about 2 more minutes", followed by "After that, your next message could write about 40.2K again." Once it has expired it reads "Cache expired". The note appears only for the last two minutes of a five-minute cache and the last ten minutes of a one-hour cache, and not while a step is running.
 
+## Share
+
+The **Share** button in the top bar of a session makes an image of that session's numbers: your prompts, what Claude Code was carrying, the biggest jump and its kind of cause, with the session's length and step count. Save it or copy it and post it where you like. The card carries only those numbers and the fixed labels — never file names, paths or prompt text — and nothing leaves your computer unless you post the image yourself.
+
 ## Commands
 
 Six commands. Each is answered on your own computer and never reaches Claude, so they cost no tokens.

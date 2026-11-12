@@ -2,6 +2,14 @@
 
 What each release of Flightpath does, newest first.
 
+## 1.1.0
+
+- Share a session's numbers as an image: the Share button in the
+  top bar makes a card with your prompts, what Claude Code was
+  carrying, the biggest jump and its kind of cause. File names,
+  paths and prompt text never appear on it, and nothing leaves
+  your machine unless you post it.
+
 ## 1.0.3
 
 - Claude Fable 5.2 is known: Room left shows its 1M window
