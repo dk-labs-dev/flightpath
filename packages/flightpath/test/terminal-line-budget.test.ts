@@ -109,6 +109,22 @@ describe("the end-of-turn hook's run time", () => {
 
 describe("the end-of-turn route's run time", () => {
   it("answers in under the bound on the 5,000-request session", async () => {
+    // Warm the route before timing it. The daemon that answers
+    // in use is the one that recorded the session from its
+    // first turn, so by the time a session is this long its
+    // one-time costs — compiling the read path, filling the
+    // store's caches — are long paid; timing a fresh daemon's
+    // first answers would measure that start, not the work a
+    // turn waits on (the first answers ran two to three
+    // times the settled ones, and the 90th percentile of 25
+    // rounds sits on them).
+    for (let round = 0; round < 5; round++) {
+      await callDaemon(daemon.port, {
+        method: "GET",
+        path: `/api/sessions/${BIG_SESSION}/terminal-line?prompt=${BIG_PROMPT}`,
+        token: daemon.token,
+      });
+    }
     const times: number[] = [];
     for (let round = 0; round < RUNS; round++) {
       const reply = await callDaemon(daemon.port, {

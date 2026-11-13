@@ -9,7 +9,7 @@ import { instructionFindings } from "./finding-instructions.js";
 import { rebuildFindings } from "./finding-rebuilds.js";
 import { skillFindings } from "./finding-skills.js";
 import type { Finding, FindingGrade } from "./payloads.js";
-import { loadSessionData, type SessionData } from "./session-data.js";
+import { loadFindingsData, type SessionData } from "./session-data.js";
 import { terminalLine } from "./terminal-line.js";
 
 const GRADE_RANK: Record<FindingGrade, number> = {
@@ -43,7 +43,7 @@ export function sessionFindings(
   storage: Storage,
   sessionId: string,
 ): Finding[] | undefined {
-  const data = loadSessionData(storage, sessionId);
+  const data = loadFindingsData(storage, sessionId);
   if (data === undefined) return undefined;
   const dismissed = new Set(storage.listDismissals(sessionId));
   return detectFindings(data)
@@ -73,7 +73,7 @@ export function dismissFinding(
   sessionId: string,
   findingId: string,
 ): boolean {
-  const data = loadSessionData(storage, sessionId);
+  const data = loadFindingsData(storage, sessionId);
   if (data === undefined) return false;
   if (!detectFindings(data).some((finding) => finding.id === findingId)) {
     return false;
