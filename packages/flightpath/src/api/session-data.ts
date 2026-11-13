@@ -216,28 +216,95 @@ export function backgroundReports(
   return reports;
 }
 
-export function loadSessionData(
+/** A session row with the lists every read of the session
+ * loads; the remaining lists are each read's own choice. */
+interface CoreRows {
+  session: SessionReadRow;
+  rows: Omit<
+    SessionRows,
+    "samples" | "pauses" | "promptAttachments" | "compactionFiles"
+  >;
+}
+
+/** The lists one read of a session may load or leave empty. */
+type RemainingRows = Pick<
+  SessionRows,
+  "samples" | "pauses" | "promptAttachments" | "compactionFiles"
+>;
+
+/** The session row and the lists every read of a session
+ * loads: the ones the finding detectors read, which the
+ * snapshot and the step detail read too. The context samples,
+ * the pauses, the prompt attachments and the compaction files
+ * are each read's own choice, so they are not here. */
+function loadCoreRows(
   storage: Storage,
   sessionId: string,
-): SessionData | undefined {
+): CoreRows | undefined {
   const session = storage.sessionRow(sessionId);
   if (session === undefined) {
     return undefined;
   }
-  return buildSessionData(session, {
-    turns: storage.turnRows(sessionId),
-    steps: storage.stepRows(sessionId),
-    humans: storage.humanRows(sessionId),
-    branches: storage.branchRows(sessionId),
-    requests: storage.requestRows(sessionId),
+  return {
+    session,
+    rows: {
+      turns: storage.turnRows(sessionId),
+      steps: storage.stepRows(sessionId),
+      humans: storage.humanRows(sessionId),
+      branches: storage.branchRows(sessionId),
+      requests: storage.requestRows(sessionId),
+      contextReports: storage.contextReportsFor(sessionId),
+      segments: storage.segmentRows(sessionId),
+      loads: storage.loadRows(sessionId),
+      requestShapes: storage.requestShapeRows(sessionId),
+    },
+  };
+}
+
+function completeSessionData(core: CoreRows, rest: RemainingRows): SessionData {
+  return buildSessionData(core.session, { ...core.rows, ...rest });
+}
+
+export function loadSessionData(
+  storage: Storage,
+  sessionId: string,
+): SessionData | undefined {
+  const core = loadCoreRows(storage, sessionId);
+  if (core === undefined) {
+    return undefined;
+  }
+  return completeSessionData(core, {
     samples: storage.contextSampleRows(sessionId),
-    contextReports: storage.contextReportsFor(sessionId),
-    segments: storage.segmentRows(sessionId),
     pauses: storage.pauseRows(sessionId),
-    loads: storage.loadRows(sessionId),
     promptAttachments: storage.promptAttachmentRows(sessionId),
     compactionFiles: storage.compactionFileRows(sessionId),
-    requestShapes: storage.requestShapeRows(sessionId),
+  });
+}
+
+/**
+ * The rows the finding detectors and their shared helpers
+ * read, and no others: the core lists, with the context
+ * samples, the pauses, the prompt attachments and the
+ * compaction files left empty. Those four are read by the
+ * snapshot and the step detail, never by a detector, so only
+ * the detectors may be given this data. Loading them anyway
+ * loads thousands of rows no detector looks at, and the
+ * end-of-turn line is asked for on every turn, so a read that
+ * does it makes the person wait for nothing.
+ */
+export function loadFindingsData(
+  storage: Storage,
+  sessionId: string,
+): SessionData | undefined {
+  const core = loadCoreRows(storage, sessionId);
+  if (core === undefined) {
+    return undefined;
+  }
+  return completeSessionData(core, {
+    samples: [],
+    pauses: [],
+    promptAttachments: [],
+    compactionFiles: [],
   });
 }
 

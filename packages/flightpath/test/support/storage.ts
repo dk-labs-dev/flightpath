@@ -19,6 +19,41 @@ export function openAtLatestVersion(dataDir: string): Storage {
   return storage;
 }
 
+/**
+ * Seed a database as an older build left it: the migrations up
+ * to `version`, stamped with that version, plus the rows the
+ * seed callback writes. Everything lands in one transaction.
+ * A historical database's contents are what a case is about,
+ * not how many file syncs writing them takes — written
+ * statement by statement, each statement is its own
+ * transaction with its own journal write and sync, and on a
+ * slow file system that cost, not the upgrade under test, is
+ * what a case spends its time on.
+ */
+export function seedVersionedDatabase(
+  dataDir: string,
+  version: number,
+  seed: (db: DatabaseSync) => void,
+): void {
+  const db = new DatabaseSync(join(dataDir, "flightpath.db"));
+  try {
+    db.exec("BEGIN");
+    for (const migration of MIGRATIONS) {
+      if (migration.version <= version) {
+        db.exec(migration.sql);
+      }
+    }
+    db.exec(`PRAGMA user_version = ${version}`);
+    seed(db);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
 export function trackStorage<T extends Storage>(storage: T): T {
   trackedUnregisters.set(
     storage,
