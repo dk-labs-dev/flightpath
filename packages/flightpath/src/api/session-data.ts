@@ -216,28 +216,87 @@ export function backgroundReports(
   return reports;
 }
 
-export function loadSessionData(
+/** A session row with the lists every read of the session
+ * loads; the remaining lists are each read's own choice. */
+interface CoreRows {
+  session: SessionReadRow;
+  rows: Omit<
+    SessionRows,
+    "samples" | "pauses" | "promptAttachments" | "compactionFiles"
+  >;
+}
+
+function loadCoreRows(
   storage: Storage,
   sessionId: string,
-): SessionData | undefined {
+): CoreRows | undefined {
   const session = storage.sessionRow(sessionId);
   if (session === undefined) {
     return undefined;
   }
-  return buildSessionData(session, {
-    turns: storage.turnRows(sessionId),
-    steps: storage.stepRows(sessionId),
-    humans: storage.humanRows(sessionId),
-    branches: storage.branchRows(sessionId),
-    requests: storage.requestRows(sessionId),
+  return {
+    session,
+    rows: {
+      turns: storage.turnRows(sessionId),
+      steps: storage.stepRows(sessionId),
+      humans: storage.humanRows(sessionId),
+      branches: storage.branchRows(sessionId),
+      requests: storage.requestRows(sessionId),
+      contextReports: storage.contextReportsFor(sessionId),
+      segments: storage.segmentRows(sessionId),
+      loads: storage.loadRows(sessionId),
+      requestShapes: storage.requestShapeRows(sessionId),
+    },
+  };
+}
+
+export function loadSessionData(
+  storage: Storage,
+  sessionId: string,
+): SessionData | undefined {
+  const core = loadCoreRows(storage, sessionId);
+  if (core === undefined) {
+    return undefined;
+  }
+  return buildSessionData(core.session, {
+    ...core.rows,
     samples: storage.contextSampleRows(sessionId),
-    contextReports: storage.contextReportsFor(sessionId),
-    segments: storage.segmentRows(sessionId),
     pauses: storage.pauseRows(sessionId),
-    loads: storage.loadRows(sessionId),
     promptAttachments: storage.promptAttachmentRows(sessionId),
     compactionFiles: storage.compactionFileRows(sessionId),
-    requestShapes: storage.requestShapeRows(sessionId),
+  });
+}
+
+/** A session's data narrowed to what the finding detectors
+ * read: without the samples, the pauses, the prompt
+ * attachments, the compaction files and the samples by
+ * branch, so a detector that reads one of those fails the
+ * typecheck instead of quietly finding an empty list. */
+export type FindingsData = Omit<
+  SessionData,
+  | "samples"
+  | "pauses"
+  | "promptAttachments"
+  | "compactionFiles"
+  | "samplesByBranch"
+>;
+
+/** The end-of-turn line is asked for on every turn, so this
+ * read loads only what the detectors use. */
+export function loadFindingsData(
+  storage: Storage,
+  sessionId: string,
+): FindingsData | undefined {
+  const core = loadCoreRows(storage, sessionId);
+  if (core === undefined) {
+    return undefined;
+  }
+  return buildSessionData(core.session, {
+    ...core.rows,
+    samples: [],
+    pauses: [],
+    promptAttachments: [],
+    compactionFiles: [],
   });
 }
 
@@ -419,7 +478,7 @@ export function mergeSessionData(
  * the model the summary and the room describe. The session's
  * first model stands only when no main request names one.
  */
-export function latestMainModel(data: SessionData): string | null {
+export function latestMainModel(data: FindingsData): string | null {
   let model: string | null = null;
   for (const request of data.requests) {
     if (

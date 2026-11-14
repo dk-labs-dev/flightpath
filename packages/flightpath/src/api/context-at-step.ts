@@ -38,6 +38,7 @@ import {
   backgroundReports,
   launchedInBackground,
   loadSessionData,
+  type FindingsData,
   type SessionData,
 } from "./session-data.js";
 import {
@@ -66,7 +67,7 @@ interface TimedItem {
  * the main thread means its main requests, as the token
  * history reads them. */
 function threadRequests(
-  data: SessionData,
+  data: FindingsData,
   branchId: number | null,
 ): RequestRow[] {
   return data.requests.filter((request) =>
@@ -119,7 +120,7 @@ function countedRequests(requests: RequestRow[]): RequestRow[] {
 
 /** The main thread's first counted request: the one that
  * carried everything the session loaded at its start. */
-export function firstMainRequest(data: SessionData): RequestRow | undefined {
+export function firstMainRequest(data: FindingsData): RequestRow | undefined {
   return countedRequests(threadRequests(data, null))[0];
 }
 
@@ -375,7 +376,7 @@ function replyItems(
  * measures, by step id: the sizes the item list reads in
  * place of an estimate. */
 function measuredSizes(
-  data: SessionData,
+  data: FindingsData,
   counted: RequestRow[],
 ): Map<number, number> {
   const sizes = new Map<number, number>();
@@ -390,7 +391,7 @@ function measuredSizes(
 
 /** The measured result sizes of every thread, the main one and
  * each branch, by step id. */
-export function measuredStepSizes(data: SessionData): Map<number, number> {
+export function measuredStepSizes(data: FindingsData): Map<number, number> {
   const sizes = new Map<number, number>();
   const threads = [null, ...data.branches.map((branch) => branch.id)];
   for (const branchId of threads) {
@@ -454,7 +455,7 @@ export function mcpServerOf(name: string): string | null {
 /** The epoch's instruction files of one thread, named as the
  * item list names a load, by the one shared naming rule. */
 export function epochInstructions(
-  data: SessionData,
+  data: FindingsData,
   branchId: number | null,
   epochStart: number,
   moment: number,

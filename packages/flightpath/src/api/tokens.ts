@@ -58,6 +58,7 @@ import {
   loadSessionData,
   stepContext,
   type BackgroundReport,
+  type FindingsData,
   type SessionData,
 } from "./session-data.js";
 
@@ -429,7 +430,7 @@ const MEASURED_FLOOR = 10;
 /** Whether a load, a compaction or a message of Claude Code's
  * entered the main thread between two moments. A subagent's
  * start-up listings went to the subagent's context. */
-function enteredBetween(data: SessionData, from: number, to: number): boolean {
+function enteredBetween(data: FindingsData, from: number, to: number): boolean {
   const inWindow = (at: number): boolean => at > from && at <= to;
   return (
     data.loads.some(
@@ -468,7 +469,7 @@ export interface MeasuredResult {
  * result.
  */
 export function measuredResult(
-  data: SessionData,
+  data: FindingsData,
   previous: RequestRow,
   request: RequestRow,
 ): MeasuredResult | null {
@@ -830,7 +831,7 @@ function buildRise(
 
 /** The compaction segment that opened between two points, if one did. */
 function compactionBetween(
-  data: SessionData,
+  data: FindingsData,
   from: TokenPoint,
   to: TokenPoint,
 ) {
@@ -956,7 +957,7 @@ function risesAndDrops(
  * indistinguishable from no change, so it stays unknown.
  */
 function rebuildCause(
-  data: SessionData,
+  data: FindingsData,
   previous: RequestRow,
   current: RequestRow,
   from: TokenPoint,
@@ -1077,7 +1078,7 @@ export interface RebuildPair {
 }
 
 /** The main thread's requests: the series the curve is drawn from. */
-export function mainSeries(data: SessionData): RequestRow[] {
+export function mainSeries(data: FindingsData): RequestRow[] {
   return data.requests.filter(
     (request) => request.branchId === null && request.querySource === "main",
   );
@@ -1086,7 +1087,7 @@ export function mainSeries(data: SessionData): RequestRow[] {
 /** The main series' consecutive requests that `isRebuild`
  * accepts, in the order they happened, each with its cause. */
 export function rebuildPairs(
-  data: SessionData,
+  data: FindingsData,
   isRebuild: (
     previous: RequestRow,
     current: RequestRow,

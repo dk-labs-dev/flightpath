@@ -109,13 +109,32 @@ describe("the end-of-turn hook's run time", () => {
 
 describe("the end-of-turn route's run time", () => {
   it("answers in under the bound on the 5,000-request session", async () => {
-    const times: number[] = [];
-    for (let round = 0; round < RUNS; round++) {
-      const reply = await callDaemon(daemon.port, {
+    const askLine = () =>
+      callDaemon(daemon.port, {
         method: "GET",
         path: `/api/sessions/${BIG_SESSION}/terminal-line?prompt=${BIG_PROMPT}`,
         token: daemon.token,
       });
+    // Warm the route until its answers settle: a daemon
+    // recording a session has long paid the first answers'
+    // one-time costs, and a fixed count can stop short of
+    // them, leaving the timed rounds still paying start-up.
+    // Settled means the last three warm-ups no longer run
+    // faster than the three before them; the cap keeps a
+    // bad day from warming forever — the rounds then show it.
+    const warmUp: number[] = [];
+    while (warmUp.length < 30) {
+      const reply = await askLine();
+      warmUp.push(reply.ms);
+      if (warmUp.length >= 6) {
+        const recent = medianOf(warmUp.slice(-3));
+        const before = medianOf(warmUp.slice(-6, -3));
+        if (recent >= before * 0.9) break;
+      }
+    }
+    const times: number[] = [];
+    for (let round = 0; round < RUNS; round++) {
+      const reply = await askLine();
       expect(JSON.parse(reply.body)).toEqual({ line: null });
       times.push(reply.ms);
     }
@@ -123,6 +142,17 @@ describe("the end-of-turn route's run time", () => {
       `end-of-turn route on 5,000 requests: median ${medianOf(times).toFixed(1)} ms, p90 ${percentileOf(times, 0.9).toFixed(1)} ms over ${times.length} runs`,
     );
     if (timingBoundsHold) {
+      // A failing run explains itself: every round in order,
+      // warm-ups first, so the slow rounds show their pattern —
+      // clustered at the start, in bursts, or spread evenly.
+      if (percentileOf(times, 0.9) >= ROUTE_P90_BOUND_MS) {
+        const series = [...warmUp, ...times]
+          .map((ms) => ms.toFixed(1))
+          .join(", ");
+        console.log(
+          `end-of-turn route rounds on ${process.platform} (warm-up ${warmUp.length}, then ${times.length}): ${series}`,
+        );
+      }
       expect(percentileOf(times, 0.9)).toBeLessThan(ROUTE_P90_BOUND_MS);
     }
   }, 60_000);

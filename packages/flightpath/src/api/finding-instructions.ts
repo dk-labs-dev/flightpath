@@ -8,7 +8,7 @@ import { epochInstructions, firstMainRequest } from "./context-at-step.js";
 import { contextReportFor } from "./context-limit.js";
 import { instructionsWording, type ListedFile } from "./finding-wording.js";
 import type { Finding } from "./payloads.js";
-import type { SessionData } from "./session-data.js";
+import type { FindingsData } from "./session-data.js";
 
 // Below this the files are not worth a word: a clean session
 // stays silent.
@@ -20,7 +20,7 @@ type Total = Finding["measure"];
 
 // A file loaded again (a resume, a compaction) is one file; the
 // copy that has a size stands for it.
-function startupFiles(data: SessionData, startedAt: number): ListedFile[] {
+function startupFiles(data: FindingsData, startedAt: number): ListedFile[] {
   const byPath = new Map<string, ListedFile>();
   for (const { name, tokens } of epochInstructions(
     data,
@@ -38,7 +38,7 @@ function startupFiles(data: SessionData, startedAt: number): ListedFile[] {
 // load after the first request may be in its figure and not in
 // ours: the figure then stands for something else.
 function reportedTotal(
-  data: SessionData,
+  data: FindingsData,
   report: ContextReportRow | null,
   startedAt: number,
 ): number | null {
@@ -66,7 +66,7 @@ function summedTotal(files: ListedFile[]): number | null {
 }
 
 function totalOf(
-  data: SessionData,
+  data: FindingsData,
   files: ListedFile[],
   startedAt: number,
   model: string | null,
@@ -82,7 +82,7 @@ function largestFirst(files: ListedFile[]): ListedFile[] {
   return [...files].sort((a, b) => (b.tokens ?? -1) - (a.tokens ?? -1));
 }
 
-export function instructionFindings(data: SessionData): Finding[] {
+export function instructionFindings(data: FindingsData): Finding[] {
   // Without the session's start there is no telling which files
   // were loaded at it.
   if (data.session.joinedPartway) return [];

@@ -8,7 +8,7 @@ import type { LoadRow } from "../storage/index.js";
 import { contextReportFor } from "./context-limit.js";
 import { skillsWording } from "./finding-wording.js";
 import type { Finding } from "./payloads.js";
-import { latestMainModel, type SessionData } from "./session-data.js";
+import { latestMainModel, type FindingsData } from "./session-data.js";
 
 // A shorter live session has not yet had the chance to use them.
 const MIN_TURNS = 10;
@@ -20,14 +20,14 @@ type Listing = LoadRow & { names: string[] };
 
 // The earliest listing is the main thread's own: a subagent's and
 // the one re-sent after a compaction come later.
-function firstListing(data: SessionData): Listing | undefined {
+function firstListing(data: FindingsData): Listing | undefined {
   const load = data.loads.find((row) => row.kind === "skill-listing");
   if (load === undefined || load.names === null) return undefined;
   return { ...load, names: load.names };
 }
 
 // Flightpath's own command turns do not count toward the ten.
-function isSettled(data: SessionData): boolean {
+function isSettled(data: FindingsData): boolean {
   if (data.session.status !== "live") return true;
   return (
     data.turns.filter((turn) => !turn.flightpathCommand).length >= MIN_TURNS
@@ -65,7 +65,7 @@ function unusedSkills(
 }
 
 function listingTokens(
-  data: SessionData,
+  data: FindingsData,
   listing: Listing,
 ): { tokens: number; estimated: boolean } | null {
   const report = contextReportFor(data.contextReports, latestMainModel(data));
@@ -76,7 +76,7 @@ function listingTokens(
   return tokens === null ? null : { tokens, estimated: true };
 }
 
-export function skillFindings(data: SessionData): Finding[] {
+export function skillFindings(data: FindingsData): Finding[] {
   const listing = firstListing(data);
   if (listing === undefined || data.session.joinedPartway) return [];
   if (!isSettled(data)) return [];

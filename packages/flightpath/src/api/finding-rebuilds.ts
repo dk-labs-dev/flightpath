@@ -12,7 +12,7 @@ import {
   toolsWording,
 } from "./finding-wording.js";
 import type { Finding, FindingKind, RebuildCause } from "./payloads.js";
-import type { SessionData } from "./session-data.js";
+import type { FindingsData } from "./session-data.js";
 import {
   isRebuildWithCause,
   rebuildPairs,
@@ -55,7 +55,7 @@ function isReportable(
 }
 
 function mcpToolNames(
-  data: SessionData,
+  data: FindingsData,
   request: RequestRow,
 ): Set<string> | undefined {
   const shape = data.requestShapes.find(
@@ -71,7 +71,7 @@ function mcpToolNames(
 // A hash that changed with the same MCP tools is a prompt change
 // alone, which the docs do not name as a cause.
 function changedMcpServers(
-  data: SessionData,
+  data: FindingsData,
   previous: RequestRow,
   current: RequestRow,
 ): string[] {
@@ -87,7 +87,7 @@ function changedMcpServers(
 }
 
 function namedRebuild(
-  data: SessionData,
+  data: FindingsData,
   { previous, current, cause }: RebuildPair,
   tokens: number,
 ): NamedRebuild | null {
@@ -127,7 +127,7 @@ function gradeOf(kind: FindingKind, expiredBefore: number): Finding["grade"] {
     : "Worth a look";
 }
 
-export function rebuildFindings(data: SessionData): Finding[] {
+export function rebuildFindings(data: FindingsData): Finding[] {
   const findings: Finding[] = [];
   let expiredBefore = 0;
   for (const pair of rebuildPairs(data, isReportable)) {
