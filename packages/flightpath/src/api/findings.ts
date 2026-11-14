@@ -9,7 +9,7 @@ import { instructionFindings } from "./finding-instructions.js";
 import { rebuildFindings } from "./finding-rebuilds.js";
 import { skillFindings } from "./finding-skills.js";
 import type { Finding, FindingGrade } from "./payloads.js";
-import { loadFindingsData, type SessionData } from "./session-data.js";
+import { loadFindingsData, type FindingsData } from "./session-data.js";
 import { terminalLine } from "./terminal-line.js";
 
 const GRADE_RANK: Record<FindingGrade, number> = {
@@ -20,7 +20,7 @@ const GRADE_RANK: Record<FindingGrade, number> = {
 
 // Each detector reads the loaded session and returns its own
 // findings; a later detector's are appended here.
-function detectFindings(data: SessionData): Finding[] {
+function detectFindings(data: FindingsData): Finding[] {
   return [
     ...rebuildFindings(data),
     ...instructionFindings(data),

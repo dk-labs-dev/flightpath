@@ -226,17 +226,6 @@ interface CoreRows {
   >;
 }
 
-/** The lists one read of a session may load or leave empty. */
-type RemainingRows = Pick<
-  SessionRows,
-  "samples" | "pauses" | "promptAttachments" | "compactionFiles"
->;
-
-/** The session row and the lists every read of a session
- * loads: the ones the finding detectors read, which the
- * snapshot and the step detail read too. The context samples,
- * the pauses, the prompt attachments and the compaction files
- * are each read's own choice, so they are not here. */
 function loadCoreRows(
   storage: Storage,
   sessionId: string,
@@ -261,10 +250,6 @@ function loadCoreRows(
   };
 }
 
-function completeSessionData(core: CoreRows, rest: RemainingRows): SessionData {
-  return buildSessionData(core.session, { ...core.rows, ...rest });
-}
-
 export function loadSessionData(
   storage: Storage,
   sessionId: string,
@@ -273,7 +258,8 @@ export function loadSessionData(
   if (core === undefined) {
     return undefined;
   }
-  return completeSessionData(core, {
+  return buildSessionData(core.session, {
+    ...core.rows,
     samples: storage.contextSampleRows(sessionId),
     pauses: storage.pauseRows(sessionId),
     promptAttachments: storage.promptAttachmentRows(sessionId),
@@ -281,26 +267,32 @@ export function loadSessionData(
   });
 }
 
-/**
- * The rows the finding detectors and their shared helpers
- * read, and no others: the core lists, with the context
- * samples, the pauses, the prompt attachments and the
- * compaction files left empty. Those four are read by the
- * snapshot and the step detail, never by a detector, so only
- * the detectors may be given this data. Loading them anyway
- * loads thousands of rows no detector looks at, and the
- * end-of-turn line is asked for on every turn, so a read that
- * does it makes the person wait for nothing.
- */
+/** A session's data narrowed to what the finding detectors
+ * read: without the samples, the pauses, the prompt
+ * attachments, the compaction files and the samples by
+ * branch, so a detector that reads one of those fails the
+ * typecheck instead of quietly finding an empty list. */
+export type FindingsData = Omit<
+  SessionData,
+  | "samples"
+  | "pauses"
+  | "promptAttachments"
+  | "compactionFiles"
+  | "samplesByBranch"
+>;
+
+/** The end-of-turn line is asked for on every turn, so this
+ * read loads only what the detectors use. */
 export function loadFindingsData(
   storage: Storage,
   sessionId: string,
-): SessionData | undefined {
+): FindingsData | undefined {
   const core = loadCoreRows(storage, sessionId);
   if (core === undefined) {
     return undefined;
   }
-  return completeSessionData(core, {
+  return buildSessionData(core.session, {
+    ...core.rows,
     samples: [],
     pauses: [],
     promptAttachments: [],
@@ -486,7 +478,7 @@ export function mergeSessionData(
  * the model the summary and the room describe. The session's
  * first model stands only when no main request names one.
  */
-export function latestMainModel(data: SessionData): string | null {
+export function latestMainModel(data: FindingsData): string | null {
   let model: string | null = null;
   for (const request of data.requests) {
     if (

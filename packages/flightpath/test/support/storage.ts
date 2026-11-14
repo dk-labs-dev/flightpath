@@ -22,13 +22,9 @@ export function openAtLatestVersion(dataDir: string): Storage {
 /**
  * Seed a database as an older build left it: the migrations up
  * to `version`, stamped with that version, plus the rows the
- * seed callback writes. Everything lands in one transaction.
- * A historical database's contents are what a case is about,
- * not how many file syncs writing them takes — written
- * statement by statement, each statement is its own
- * transaction with its own journal write and sync, and on a
- * slow file system that cost, not the upgrade under test, is
- * what a case spends its time on.
+ * seed callback writes. Everything lands in one transaction,
+ * because each statement written on its own syncs the journal,
+ * and on a slow disk that took most of a case's time.
  */
 export function seedVersionedDatabase(
   dataDir: string,
@@ -36,8 +32,8 @@ export function seedVersionedDatabase(
   seed: (db: DatabaseSync) => void,
 ): void {
   const db = new DatabaseSync(join(dataDir, "flightpath.db"));
+  db.exec("BEGIN");
   try {
-    db.exec("BEGIN");
     for (const migration of MIGRATIONS) {
       if (migration.version <= version) {
         db.exec(migration.sql);

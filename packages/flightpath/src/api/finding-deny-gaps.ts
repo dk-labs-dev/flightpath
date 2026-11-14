@@ -11,7 +11,7 @@ import { parseRecord, str } from "../util/json.js";
 import { measuredStepSizes } from "./context-at-step.js";
 import { denyGapWording } from "./finding-wording.js";
 import type { Finding, FindingGrade } from "./payloads.js";
-import type { SessionData } from "./session-data.js";
+import type { FindingsData } from "./session-data.js";
 import { stepChars } from "./tokens.js";
 
 // `vendor`, `target` and `out` are left out: projects use those
@@ -91,7 +91,7 @@ function pathBelow(project: string, filePath: string): string[] | null {
     : null;
 }
 
-function readsInGaps(data: SessionData, project: string): UncoveredRead[] {
+function readsInGaps(data: FindingsData, project: string): UncoveredRead[] {
   const reads: UncoveredRead[] = [];
   for (const step of data.steps) {
     if (step.toolName !== "Read" || step.outcome === "failed") continue;
@@ -115,7 +115,7 @@ function isCovered(gap: Gap, rules: string[]): boolean {
 }
 
 function tokensRead(
-  data: SessionData,
+  data: FindingsData,
   reads: UncoveredRead[],
 ): Finding["measure"] {
   const measured = measuredStepSizes(data);
@@ -141,7 +141,7 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-export function denyGapFindings(data: SessionData): Finding[] {
+export function denyGapFindings(data: FindingsData): Finding[] {
   const project = data.session.projectPath;
   if (project === null) return [];
   const candidates = readsInGaps(data, project);
