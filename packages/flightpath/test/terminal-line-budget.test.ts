@@ -107,9 +107,7 @@ describe("the end-of-turn hook's run time", () => {
   it("adds under the bound to a bare node start when it prints a line", () => {
     const overhead = overheadOf(mixed.fixPrompt, true);
     report("end-of-turn line, printing", overhead);
-    if (timingBoundsHold) {
-      expect(percentileOf(overhead, 0.9)).toBeLessThan(OVERHEAD_P90_BOUND_MS);
-    }
+    expectOverheadUnderBound("end-of-turn line, printing", overhead);
   }, 60_000);
 
   it("adds under the bound to a bare node start when it stays silent", () => {
