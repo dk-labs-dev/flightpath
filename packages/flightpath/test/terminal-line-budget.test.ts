@@ -89,21 +89,31 @@ function report(label: string, values: number[]): void {
   );
 }
 
+function expectOverheadUnderBound(label: string, values: number[]): void {
+  if (!timingBoundsHold) return;
+  // A failing run explains itself: every round in order, so the
+  // slow rounds show their pattern — clustered at the start, in
+  // bursts, or spread evenly.
+  if (percentileOf(values, 0.9) >= OVERHEAD_P90_BOUND_MS) {
+    const series = values.map((ms) => ms.toFixed(1)).join(", ");
+    console.log(
+      `${label} rounds on ${process.platform} (${values.length}): ${series}`,
+    );
+  }
+  expect(percentileOf(values, 0.9)).toBeLessThan(OVERHEAD_P90_BOUND_MS);
+}
+
 describe("the end-of-turn hook's run time", () => {
   it("adds under the bound to a bare node start when it prints a line", () => {
     const overhead = overheadOf(mixed.fixPrompt, true);
     report("end-of-turn line, printing", overhead);
-    if (timingBoundsHold) {
-      expect(percentileOf(overhead, 0.9)).toBeLessThan(OVERHEAD_P90_BOUND_MS);
-    }
+    expectOverheadUnderBound("end-of-turn line, printing", overhead);
   }, 60_000);
 
   it("adds under the bound to a bare node start when it stays silent", () => {
     const overhead = overheadOf(mixed.cleanPrompt, false);
     report("end-of-turn line, silent", overhead);
-    if (timingBoundsHold) {
-      expect(percentileOf(overhead, 0.9)).toBeLessThan(OVERHEAD_P90_BOUND_MS);
-    }
+    expectOverheadUnderBound("end-of-turn line, silent", overhead);
   }, 60_000);
 });
 
