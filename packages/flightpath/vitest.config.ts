@@ -63,6 +63,15 @@ export default defineConfig({
           name: "budgets",
           include: budgetFiles,
           fileParallelism: false,
+          // One fork as well: fileParallelism: false on its own
+          // does not hold these files to one at a time in
+          // Vitest 3.2 — run from the command line, the project
+          // still starts its files side by side (measured: the
+          // files' test times added up to well over the run's
+          // wall time). A single fork is what makes the files
+          // take turns, so no neighbouring file's daemon shares
+          // the processor with a measured run.
+          poolOptions: { forks: { singleFork: true } },
           retry: 0,
         },
       },
